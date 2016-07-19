@@ -19,7 +19,7 @@ export PORTAGE_CACHE="${PORTAGE_CACHE:-${VAGRANT_DIR}/portagecache}"
 export EMERGE_DEFAULTS_ARGS="${EMERGE_DEFAULTS_ARGS:---accept-properties=-interactive -t --verbose --update --noreplace --nospinner --oneshot --complete-graph --buildpkg}"
 export FEATURES="parallel-fetch protect-owned userpriv -distcc -distcc-pump -splitdebug -nostrip -compressdebug"
 export WEBRSYNC="${WEBRSYNC:-1}"
-export COMMUNITY_REPOSITORY_SPECS="${COMMUNITY_REPOSITORY_SPECS:-https://github.com/Sabayon/community-repositories.git}"
+export REPOSITORY_SPECS="${REPOSITORY_SPECS:-https://github.com/Sabayon/community-repositories.git}"
 export ARCHES="amd64"
 export KEEP_PREVIOUS_VERSIONS=1 #you can override this in build.sh
 export EMERGE_SPLIT_INSTALL=0 #by default don't split emerge installation
@@ -58,7 +58,7 @@ pushd ${VAGRANT_DIR}
 git fetch --all
 git reset --hard origin/master
 rm -rf ${VAGRANT_DIR}/repositories
-git clone ${COMMUNITY_REPOSITORY_SPECS} ${VAGRANT_DIR}/repositories
+git clone ${REPOSITORY_SPECS} ${VAGRANT_DIR}/repositories
 update_repositories
 popd
 }
@@ -405,7 +405,7 @@ pushd ${VAGRANT_DIR}/repositories/$REPO_NAME
 ### XXX: Libchecks in there!
 irc_msg "Repository \"${REPO_NAME}\" build starting."
 env -i REPOSITORY_NAME=$REPO_NAME REPOSITORIES=$REPOSITORIES TEMPLOG=$TEMPLOG /bin/bash -c "
-  . /vagrant/scripts/functions.sh
+  . /sbin/sark-functions.sh
   load_env_from_yaml \"build.yaml\"
 { build_all \"\$BUILD_ARGS\"; } 1>&2 > \$TEMPLOG "
 NOW=$(date +"%Y-%m-%d")
