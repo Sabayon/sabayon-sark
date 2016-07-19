@@ -429,7 +429,7 @@ echo "@@@@@@@@@@@@@@@"
 cat ${VAGRANT_DIR}/artifacts/AVAILABLE_REPOSITORIES
 # \.[a-f0-9]{40}
 
-sar-genreposmeta
+sark-genreposmeta
 }
 
 generate_repository_metadata() {
@@ -457,7 +457,7 @@ local REMOVED=0
 for i in "${PKGLISTS[@]}"
 do
   local REPO_CONTENT=$(cat ${i} | perl -lpe 's:\~.*::g' | xargs echo );
-  local TOREMOVE=$(OUTPUT_REMOVED=1 PACKAGES=$REPO_CONTENT sar-version-sanitizer );
+  local TOREMOVE=$(OUTPUT_REMOVED=1 PACKAGES=$REPO_CONTENT sark-version-sanitizer );
   [ -n "${TOREMOVE}" ] && let REMOVED+=1 && package_remove ${TOREMOVE}
 done
 

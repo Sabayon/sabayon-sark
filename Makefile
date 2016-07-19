@@ -22,5 +22,4 @@ install:
 	install -m 0755 *-functions.sh $(DESTDIR)/$(SBINDIR)/
 
 	install -d $(DESTDIR)/$(UBINDIR)
-	install -m 0755 sar-* $(DESTDIR)/$(UBINDIR)/
-
+	install -m 0755 sark-* $(DESTDIR)/$(UBINDIR)/
