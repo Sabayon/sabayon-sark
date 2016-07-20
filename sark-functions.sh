@@ -243,7 +243,7 @@ get_image $DOCKER_BUILDER_IMAGE $DOCKER_BUILDER_TAGGED_IMAGE
 export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE
 
 [ -n "${TOREMOVE}" ] && \
-export DOCKER_OPTS="${DOCKER_USER_OPTS} --name ${REPOSITORY_NAME}-remove-${JOB_ID}" && \
+export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-remove-${JOB_ID}" && \
 package_remove ${TOREMOVE} && \
 [ "$DOCKER_COMMIT_IMAGE" = true ] && \
 docker commit "${REPOSITORY_NAME}-remove-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE && \
