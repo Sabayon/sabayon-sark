@@ -237,7 +237,6 @@ export PUBKEY="${PUBKEY:-${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.pub}"
 
 # Remove packages. maintainance first.
 # Sets the docker image that we will use from now on
-get_image $DOCKER_BUILDER_IMAGE $DOCKER_BUILDER_TAGGED_IMAGE
 [ "$CREATEREPO_PHASE" = true ] && get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
 
 export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE
@@ -253,6 +252,7 @@ docker rm -f "${REPOSITORY_NAME}-remove-${JOB_ID}"
 # Free the cache of builder if requested.
 [ -n "$CLEAN_CACHE" ] && [ "$CLEAN_CACHE" -eq 1 ] && [ "$DOCKER_COMMIT_IMAGE" = true ] && expire_image $DOCKER_BUILDER_IMAGE $DOCKER_BUILDER_TAGGED_IMAGE
 
+get_image $DOCKER_BUILDER_IMAGE $DOCKER_BUILDER_TAGGED_IMAGE
 export DOCKER_IMAGE=$DOCKER_BUILDER_TAGGED_IMAGE
 
 export DOCKER_OPTS="${DOCKER_USER_OPTS} --name ${REPOSITORY_NAME}-build-${JOB_ID}"
@@ -294,6 +294,7 @@ else
 fi
 
 if [ "$CREATEREPO_PHASE" = true ]; then
+  get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
   echo "*** Generating repository ***"
   # Preparing Eit image.
   export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE
