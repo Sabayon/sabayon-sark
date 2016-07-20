@@ -298,10 +298,10 @@ if [ "$CREATEREPO_PHASE" = true ]; then
   # Preparing Eit image.
   export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE
   # Create repository
-  export DOCKER_OPTS="${DOCKER_USER_OPTS} --name ${REPOSITORY_NAME}-eit-${JOB_ID}"
+  export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-eit-${JOB_ID}"
   PORTAGE_ARTIFACTS="$TEMPDIR" OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}" sabayon-createrepo
   # Eit containers are cheap, not pushing to dockerhub.
-  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-eit-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE && docker rm -f "${REPOSITORY_NAME}-eit-${JOB_ID}"
+  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-eit-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-eit-${JOB_ID}"
 fi
 
 rm -rf $TEMPDIR
@@ -313,11 +313,11 @@ rm -rf $TEMPDIR
 if [ "$CLEAN_PHASE" = true ]; then
   echo "*** Cleanup cruft from repository ***"
   # Cleanup - old cruft/Maintenance
-  export DOCKER_OPTS="${DOCKER_USER_OPTS} --name ${REPOSITORY_NAME}-clean-${JOB_ID}"
+  export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-clean-${JOB_ID}"
   build_clean
-  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE && docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
+  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
   purge_old_packages
-  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE && docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
+  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
 fi
 
 if [ "$DEPLOY_PHASE" = true ]; then
