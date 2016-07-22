@@ -172,6 +172,7 @@ local DOCKER_IMAGE="${1}"
 local DOCKER_TAGGED_IMAGE="${2}"
 
 if docker images | grep -q "$DOCKER_TAGGED_IMAGE"; then
+  echo "*** Removing $DOCKER_TAGGED_IMAGE ***"
   docker rmi -f "$DOCKER_TAGGED_IMAGE"
 fi
 docker pull "$DOCKER_IMAGE"
