@@ -345,6 +345,7 @@ OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}" sabayon-createrepo-remo
 load_env_from_yaml() {
 local YAML_FILE=$1
 
+# repository.*
 cat $YAML_FILE | shyaml get-value repository.description  &>/dev/null && export REPOSITORY_DESCRIPTION=$(cat $YAML_FILE | shyaml get-value repository.description)  # REPOSITORY_DESCRIPTION
 cat $YAML_FILE | shyaml get-value repository.maintenance.keep_previous_versions  &>/dev/null && export KEEP_PREVIOUS_VERSIONS=$(cat $YAML_FILE | shyaml get-value repository.maintenance.keep_previous_versions) # KEEP_PREVIOUS_VERSIONS
 cat $YAML_FILE | shyaml get-values repository.maintenance.remove  &>/dev/null && export TOREMOVE="$(cat $YAML_FILE | shyaml get-values repository.maintenance.remove | xargs echo)" # replaces package_remove
@@ -352,23 +353,16 @@ cat $YAML_FILE | shyaml get-value repository.maintenance.clean_cache  &>/dev/nul
 cat $YAML_FILE | shyaml get-value repository.maintenance.check_diffs  &>/dev/null && export CHECK_BUILD_DIFFS=$(cat $YAML_FILE | shyaml get-value repository.maintenance.check_diffs) # CHECK_BUILD_DIFFS
 
 # recompose our BUILD_ARGS
+# build.*
 cat $YAML_FILE | shyaml get-values build.target &>/dev/null && BUILD_ARGS="$(cat $YAML_FILE | shyaml get-values build.target | xargs echo)"  #mixed toinstall BUILD_ARGS
 cat $YAML_FILE | shyaml get-values build.injected_target &>/dev/null && BUILD_INJECTED_ARGS="$(cat $YAML_FILE | shyaml get-values build.injected_target | xargs echo)"  #mixed toinstall BUILD_ARGS
-
 cat $YAML_FILE | shyaml get-values build.overlays &>/dev/null && BUILD_ARGS="${BUILD_ARGS} --layman $(cat $YAML_FILE | shyaml get-values build.overlays | xargs echo)" #--layman options
-cat $YAML_FILE | shyaml get-values build.equo.package.install &>/dev/null && BUILD_ARGS="${BUILD_ARGS} --install $(cat $YAML_FILE | shyaml get-values build.equo.package.install | xargs echo)"  #mixed --install BUILD_ARGS
-cat $YAML_FILE | shyaml get-values build.equo.package.remove &>/dev/null && BUILD_ARGS="${BUILD_ARGS} --remove $(cat $YAML_FILE | shyaml get-values build.equo.package.remove | xargs echo)"  #mixed --remove BUILD_ARGS
 
-cat $YAML_FILE | shyaml get-values build.equo.package.mask &>/dev/null && EQUO_MASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.mask | xargs echo)"
-cat $YAML_FILE | shyaml get-values build.equo.package.unmask &>/dev/null && EQUO_UNMASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.unmask | xargs echo)"
-
-export BUILD_ARGS
-export BUILD_INJECTED_ARGS
-export EQUO_MASKS
-export EQUO_UNMASKS
-
+# build.docker.*
 cat $YAML_FILE | shyaml get-value build.docker.image  &>/dev/null && export DOCKER_IMAGE=$(cat $YAML_FILE | shyaml get-value build.docker.image) # DOCKER_IMAGE
 cat $YAML_FILE | shyaml get-value build.docker.entropy_image  &>/dev/null && export DOCKER_EIT_IMAGE=$(cat $YAML_FILE | shyaml get-value build.docker.entropy_image) # DOCKER_EIT_IMAGE
+
+# build.emerge.*
 cat $YAML_FILE | shyaml get-value build.emerge.default_args  &>/dev/null && export EMERGE_DEFAULTS_ARGS=$(cat $YAML_FILE | shyaml get-value build.emerge.default_args) # EMERGE_DEFAULTS_ARGS
 cat $YAML_FILE | shyaml get-value build.emerge.split_install  &>/dev/null && export EMERGE_SPLIT_INSTALL=$(cat $YAML_FILE | shyaml get-value build.emerge.split_install) # EMERGE_SPLIT_INSTALL
 cat $YAML_FILE | shyaml get-value build.emerge.features  &>/dev/null && export FEATURES=$(cat $YAML_FILE | shyaml get-value build.emerge.features) # FEATURES
@@ -384,6 +378,8 @@ cat $YAML_FILE | shyaml get-value build.emerge.remote_portdir &>/dev/null && exp
 cat $YAML_FILE | shyaml get-values build.emerge.remove_remote_overlay &>/dev/null && export REMOVE_REMOTE_OVERLAY="$(cat $YAML_FILE | shyaml get-values build.emerge.remove_remote_overlay | xargs echo)"
 cat $YAML_FILE | shyaml get-values build.emerge.remove_layman_overlay &>/dev/null && export REMOVE_LAYMAN_OVERLAY="$(cat $YAML_FILE | shyaml get-values build.emerge.remove_layman_overlay | xargs echo)"
 cat $YAML_FILE | shyaml get-value build.qa_checks &>/dev/null && export QA_CHECKS=$(cat $YAML_FILE | shyaml get-values build.qa_checks) # QA_CHECKS, default 1.
+
+# build.equo.*
 cat $YAML_FILE | shyaml get-value build.equo.enman_self &>/dev/null && export ENMAN_ADD_SELF=$(cat $YAML_FILE | shyaml get-values build.equo.enman_self) # ENMAN_ADD_SELF, default 1.
 cat $YAML_FILE | shyaml get-value build.equo.repositories  &>/dev/null && export ENMAN_REPOSITORIES=$(cat $YAML_FILE | shyaml get-values build.equo.repositories) # ENMAN_REPOSITORIES
 cat $YAML_FILE | shyaml get-value build.equo.remove_repositories &>/dev/null && export REMOVE_ENMAN_REPOSITORIES=$(cat $YAML_FILE | shyaml get-values build.equo.remove_repositories) # REMOVE_ENMAN_REPOSITORIES
@@ -394,6 +390,13 @@ cat $YAML_FILE | shyaml get-value build.equo.dependency_install.dependency_scan_
 cat $YAML_FILE | shyaml get-value build.euqo.dependency_install.prune_virtuals &>/dev/null && export PRUNE_VIRTUALS # PRUNE_VIRTUALS
 cat $YAML_FILE | shyaml get-value build.equo.dependency_install.install_version  &>/dev/null && export EQUO_INSTALL_VERSION=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.install_version) # EQUO_INSTALL_VERSION
 cat $YAML_FILE | shyaml get-value build.equo.dependency_install.split_install  &>/dev/null && export EQUO_SPLIT_INSTALL=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.split_install) # EQUO_SPLIT_INSTALL
+cat $YAML_FILE | shyaml get-values build.equo.package.install &>/dev/null &&  BUILD_ARGS="${BUILD_ARGS} --install $(cat $YAML_FILE | shyaml get-values build.equo.package.install | xargs echo)"  #mixed --install BUILD_ARGS
+cat $YAML_FILE | shyaml get-values build.equo.package.remove &>/dev/null &&  BUILD_ARGS="${BUILD_ARGS} --remove $(cat $YAML_FILE | shyaml get-values build.equo.package.remove | xargs echo)"  #mixed --remove BUILD_ARGS
+cat $YAML_FILE | shyaml get-values build.equo.package.mask &>/dev/null && export EQUO_MASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.mask | xargs echo)"
+cat $YAML_FILE | shyaml get-values build.equo.package.unmask &>/dev/null && export EQUO_UNMASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.unmask | xargs echo)"
+
+export BUILD_ARGS
+export BUILD_INJECTED_ARGS
 }
 
 automated_build() {
