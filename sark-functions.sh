@@ -27,6 +27,7 @@ export EMERGE_SPLIT_INSTALL=0 #by default don't split emerge installation
 export IRC_IDENT="${IRC_IDENT:-bot sabayon scr builder}"
 export IRC_NICK="${IRC_NICK:-SCRBuilder}"
 export DOCKERHUB_PUSH="${DOCKERHUB_PUSH:-0}"
+export ETP_NOCACHE="${ETP_NOCACHE:-1}"
 
 URI_BASE="${URI_BASE:-http://mirror.de.sabayon.org/community/}"
 
@@ -394,6 +395,7 @@ cat $YAML_FILE | shyaml get-values build.equo.package.install &>/dev/null &&  BU
 cat $YAML_FILE | shyaml get-values build.equo.package.remove &>/dev/null &&  BUILD_ARGS="${BUILD_ARGS} --remove $(cat $YAML_FILE | shyaml get-values build.equo.package.remove | xargs echo)"  #mixed --remove BUILD_ARGS
 cat $YAML_FILE | shyaml get-values build.equo.package.mask &>/dev/null && export EQUO_MASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.mask | xargs echo)"
 cat $YAML_FILE | shyaml get-values build.equo.package.unmask &>/dev/null && export EQUO_UNMASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.unmask | xargs echo)"
+cat $YAML_FILE | shyaml get-value build.equo.no_cache  &>/dev/null && export ETP_NOCACHE=$(cat $YAML_FILE | shyaml get-value build.equo.no_cache) # ETP_NOCACHE
 
 export BUILD_ARGS
 export BUILD_INJECTED_ARGS
