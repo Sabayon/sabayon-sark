@@ -315,10 +315,12 @@ rm -rf $TEMPDIR
 
 if [ "$CLEAN_PHASE" = true ]; then
   echo "*** Cleanup cruft from repository ***"
+  get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
   # Cleanup - old cruft/Maintenance
   export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-clean-${JOB_ID}"
   build_clean
   [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
+  get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
   purge_old_packages
   [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
 fi
