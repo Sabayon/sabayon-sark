@@ -322,7 +322,6 @@ if [ "$CLEAN_PHASE" = true ]; then
   [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
   get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
   purge_old_packages
-  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
 fi
 
 if [ "$DEPLOY_PHASE" = true ]; then
@@ -457,7 +456,7 @@ done
 }
 
 purge_old_packages() {
-
+export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-removeclean-${JOB_ID}"
 local PKGLISTS=($(find ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME/ | grep PKGLIST))
 local REMOVED=0
 for i in "${PKGLISTS[@]}"
@@ -468,6 +467,7 @@ do
 done
 
 [ $REMOVED != 0 ] && generate_repository_metadata
+[ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-removeclean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-removeclean-${JOB_ID}"
 }
 
 
