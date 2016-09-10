@@ -10,7 +10,7 @@ export GENMETADATA_PHASE=${GENMETADATA_PHASE:-true}
 export CLEAN_PHASE=${CLEAN_PHASE:-true}
 export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 
-export ENTRYPOINT="${ENTRYPOINT:---entrypoint /usr/sbin/builder}"
+export ENTRYPOINT="--entrypoint ${ENTRYPOINT:-/usr/sbin/builder}"
 export DOCKER_OPTS="${DOCKER_OPTS:--t $ENTRYPOINT}" # Remember to set --rm if DOCKER_COMMIT_IMAGE: false
 export DISTFILES="${VAGRANT_DIR}/distfiles"
 export ENTROPY_DOWNLOADED_PACKAGES="${VAGRANT_DIR}/entropycache"
