@@ -8,6 +8,7 @@ export DEPLOY_PHASE=${DEPLOY_PHASE:-false}
 export CREATEREPO_PHASE=${CREATEREPO_PHASE:-true}
 export GENMETADATA_PHASE=${GENMETADATA_PHASE:-true}
 export CLEAN_PHASE=${CLEAN_PHASE:-true}
+export COMMIT_EIT_IMAGE=${COMMIT_EIT_IMAGE:-false}
 export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 
 export ENTRYPOINT="--entrypoint ${ENTRYPOINT:-/usr/sbin/builder}"
@@ -239,14 +240,16 @@ export PUBKEY="${PUBKEY:-${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.pub}"
 
 # Remove packages. maintainance first.
 # Sets the docker image that we will use from now on
-[ "$CREATEREPO_PHASE" = true ] && get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
+[ "$CREATEREPO_PHASE" = true ] && docker pull $DOCKER_EIT_IMAGE
+[ "$CREATEREPO_PHASE" = true ] && [ "$COMMIT_EIT_IMAGE" = true ] get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
 
-export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE
+[ "$COMMIT_EIT_IMAGE" = true ] && \
+export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE || export DOCKER_IMAGE=$DOCKER_EIT_IMAGE
 
 [ -n "${TOREMOVE}" ] && \
 export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-remove-${JOB_ID}" && \
 package_remove ${TOREMOVE} && \
-[ "$DOCKER_COMMIT_IMAGE" = true ] && \
+[ "$COMMIT_EIT_IMAGE" = true ] && \
 docker commit "${REPOSITORY_NAME}-remove-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE && \
 docker rm -f "${REPOSITORY_NAME}-remove-${JOB_ID}"
 
@@ -296,15 +299,17 @@ else
 fi
 
 if [ "$CREATEREPO_PHASE" = true ]; then
-  get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
   echo "*** Generating repository ***"
   # Preparing Eit image.
-  export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE
+  [ "$COMMIT_EIT_IMAGE" = true ] && \
+  export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE || export DOCKER_IMAGE=$DOCKER_EIT_IMAGE
+  [ "$COMMIT_EIT_IMAGE" = true ] && get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
+
   # Create repository
   export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-eit-${JOB_ID}"
   PORTAGE_ARTIFACTS="$TEMPDIR" OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}" sabayon-createrepo
   # Eit containers are cheap, not pushing to dockerhub.
-  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-eit-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-eit-${JOB_ID}"
+  [ "$COMMIT_EIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-eit-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-eit-${JOB_ID}"
 fi
 
 rm -rf $TEMPDIR
@@ -315,12 +320,14 @@ rm -rf $TEMPDIR
 
 if [ "$CLEAN_PHASE" = true ]; then
   echo "*** Cleanup cruft from repository ***"
-  get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
+  [ "$COMMIT_EIT_IMAGE" = true ] && \
+  export DOCKER_IMAGE=$DOCKER_EIT_TAGGED_IMAGE || export DOCKER_IMAGE=$DOCKER_EIT_IMAGE
+  [ "$COMMIT_EIT_IMAGE" = true ] && get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
+
   # Cleanup - old cruft/Maintenance
   export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-clean-${JOB_ID}"
   build_clean
-  [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
-  get_image $DOCKER_EIT_IMAGE $DOCKER_EIT_TAGGED_IMAGE
+  [ "$COMMIT_EIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-clean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-clean-${JOB_ID}"
   purge_old_packages
 fi
 
