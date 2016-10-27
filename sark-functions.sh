@@ -29,6 +29,7 @@ export IRC_IDENT="${IRC_IDENT:-bot sabayon scr builder}"
 export IRC_NICK="${IRC_NICK:-SCRBuilder}"
 export DOCKERHUB_PUSH="${DOCKERHUB_PUSH:-0}"
 export ETP_NOCACHE="${ETP_NOCACHE:-1}"
+export CLEAN_CACHE="${CLEAN_CACHE:-0}"
 
 URI_BASE="${URI_BASE:-http://mirror.de.sabayon.org/community/}"
 
@@ -416,7 +417,7 @@ local TEMPLOG=$(mktemp)
 pushd ${VAGRANT_DIR}/repositories/$REPO_NAME
 ### XXX: Libchecks in there!
 irc_msg "Repository \"${REPO_NAME}\" build starting."
-env -i REPOSITORY_NAME=$REPO_NAME REPOSITORIES=$REPOSITORIES TEMPLOG=$TEMPLOG /bin/bash -c "
+env -i REPOSITORY_NAME=$REPO_NAME CLEAN_CACHE=$CLEAN_CACHE REPOSITORIES=$REPOSITORIES TEMPLOG=$TEMPLOG /bin/bash -c "
   . /sbin/sark-functions.sh
   load_env_from_yaml \"build.yaml\"
 { build_all \"\$BUILD_ARGS\"; } 1>&2 > \$TEMPLOG "
