@@ -62,7 +62,7 @@ git fetch --all
 git reset --hard origin/master
 rm -rf ${VAGRANT_DIR}/repositories
 git clone ${REPOSITORY_SPECS} ${VAGRANT_DIR}/repositories
-update_repositories
+[ -z "${REPOSITORIES}" ] && update_repositories
 popd
 }
 
@@ -433,7 +433,7 @@ rm -rf $TEMPLOG
 
 generate_metadata() {
 echo "Generating metadata"
-update_repositories
+[ -z "${REPOSITORIES}" ] && update_repositories
 # Generate repository list
 printf "%s\n" "${REPOSITORIES[@]}" > ${VAGRANT_DIR}/artifacts/AVAILABLE_REPOSITORIES
 
