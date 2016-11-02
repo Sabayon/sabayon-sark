@@ -12,7 +12,7 @@ export COMMIT_EIT_IMAGE=${COMMIT_EIT_IMAGE:-false}
 export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 
 export ENTRYPOINT="--entrypoint ${ENTRYPOINT:-/usr/sbin/builder}"
-export DOCKER_OPTS="${DOCKER_OPTS:--t $ENTRYPOINT}" # Remember to set --rm if DOCKER_COMMIT_IMAGE: false
+export DOCKER_OPTS="${DOCKER_OPTS:---cap-add=SYS_PTRACE -t $ENTRYPOINT}" # Remember to set --rm if DOCKER_COMMIT_IMAGE: false
 export DISTFILES="${VAGRANT_DIR}/distfiles"
 export ENTROPY_DOWNLOADED_PACKAGES="${VAGRANT_DIR}/entropycache"
 export DOCKER_EIT_IMAGE="${DOCKER_EIT_IMAGE:-sabayon/eit-amd64}"
