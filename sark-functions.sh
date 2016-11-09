@@ -33,7 +33,7 @@ export CLEAN_CACHE="${CLEAN_CACHE:-0}"
 
 URI_BASE="${URI_BASE:-http://mirror.de.sabayon.org/community/}"
 
-[ "$DOCKER_COMMIT_IMAGE" = true ]  && export DOCKER_OPTS="-t $ENTRYPOINT"
+[ "$DOCKER_COMMIT_IMAGE" = true ]  && export DOCKER_OPTS=${DOCKER_OPTS#--rm}
 [ -e ${VAGRANT_DIR}/confs/env ] && . ${VAGRANT_DIR}/confs/env
 
 if [ "$DOCKER_COMMIT_IMAGE" = true ]; then
