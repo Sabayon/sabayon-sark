@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This code makes use of gnu parallel
+# O. Tange (2011): GNU Parallel - The Command-Line Power Tool,
+#  ;login: The USENIX Magazine, February 2011:42-47.
+
 DOCKER_COMMIT_IMAGE=${DOCKER_COMMIT_IMAGE:-true}
 
 VAGRANT_DIR="${VAGRANT_DIR:-/vagrant}"
@@ -47,7 +51,7 @@ env_parallel() {
   grep -vFf <(readonly) |
   grep -v 'declare .. (GROUPS|FUNCNAME|DIRSTACK|_|PIPESTATUS|USERNAME|BASH_[A-Z_]+) ';
 typeset -f)";
-`which parallel` "$@";
+`which parallel` --will-cite "$@";
 unset PARALLEL_ENV;
 }
 
