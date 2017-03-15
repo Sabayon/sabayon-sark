@@ -34,6 +34,7 @@ export IRC_NICK="${IRC_NICK:-SCRBuilder}"
 export DOCKERHUB_PUSH="${DOCKERHUB_PUSH:-0}"
 export ETP_NOCACHE="${ETP_NOCACHE:-1}"
 export CLEAN_CACHE="${CLEAN_CACHE:-0}"
+export PRETEND="${PRETEND:-0}"
 
 URI_BASE="${URI_BASE:-http://mirror.de.sabayon.org/community/}"
 
