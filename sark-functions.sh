@@ -13,6 +13,7 @@ export CREATEREPO_PHASE=${CREATEREPO_PHASE:-true}
 export GENMETADATA_PHASE=${GENMETADATA_PHASE:-true}
 export CLEAN_PHASE=${CLEAN_PHASE:-true}
 export COMMIT_EIT_IMAGE=${COMMIT_EIT_IMAGE:-false}
+export GENKEY_PHASE=${GENKEY_PHASE:-true}
 export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 
 export ENTRYPOINT="--entrypoint ${ENTRYPOINT:-/usr/sbin/builder}"
@@ -236,11 +237,11 @@ local NEW_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 # Generate keys if not present
 export PRIVATEKEY="${PRIVATEKEY:-${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.key}"
 export PUBKEY="${PUBKEY:-${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.pub}"
-( [ ! -f ${PRIVATEKEY} ] || [ ! -f ${PUBKEY} ] ) && gen_gpg_keys "${REPOSITORY_NAME}" "${PRIVATEKEY}" "${PUBKEY}"
+( [ ! -f ${PRIVATEKEY} ] || [ ! -f ${PUBKEY} ] ) && [ "$GENKEY_PHASE" = true ] && gen_gpg_keys "${REPOSITORY_NAME}" "${PRIVATEKEY}" "${PUBKEY}"
 
 
 #we need to get rid of Packages during md5sum, it contains TIMESTAMP that gets updated on each build (and thus changes, also if the compiled files remains the same)
-#here we are trying to see if there are diffs between the bins, not buy the metas.
+#here we are trying to see if there are diffs between the bins, not by the metas.
 # let's do the hash of the tbz2 without xpak data
 [ "$CHECK_BUILD_DIFFS" -eq 1 ] && packages_hash $VAGRANT_DIR $REPOSITORY_NAME $OLD_BINHOST_MD5
 
@@ -486,7 +487,7 @@ done
 
 docker_clean() {
 # Best effort - cleaning orphaned containers
-docker ps -a -q | xargs -n 1 -I {} sudo docker rm {}
+docker ps -a -q | xargs -n 1 -I {} docker rm {}
 
 # Best effort - cleaning orphaned images
 local images=$(docker images | grep '<none>' | tr -s ' ' | cut -d ' ' -f 3)
