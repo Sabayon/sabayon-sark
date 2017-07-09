@@ -5,7 +5,7 @@ export GENKEY_PHASE=${GENKEY_PHASE:-false} # Disable for default.
 export VAGRANT_DIR="${VAGRANT_DIR:-$(pwd)}"
 
 # Speed up test runs by disabling slow syncs and mirror sorts
-export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-1}"
+export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
 export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
 
 . /sbin/sark-functions.sh
