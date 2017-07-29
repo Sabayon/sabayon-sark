@@ -232,6 +232,8 @@ local DOCKER_USER_OPTS="${DOCKER_OPTS}"
 
 local OLD_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 local NEW_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+local PRE_SCRIPT_FILE=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+local POST_SCRIPT_FILE=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 
 
 # Generate keys if not present
@@ -268,10 +270,23 @@ get_image $DOCKER_BUILDER_IMAGE $DOCKER_BUILDER_TAGGED_IMAGE
 export DOCKER_IMAGE=$DOCKER_BUILDER_TAGGED_IMAGE
 
 export DOCKER_OPTS="${DOCKER_USER_OPTS} --name ${REPOSITORY_NAME}-build-${JOB_ID}"
+
+# Prepare and post script
+[ -n "${PRE_SCRIPT_COMMANDS}" ] && \
+  printf '%s\n' "${PRE_SCRIPT_COMMANDS[@]}" > $PRE_SCRIPT_FILE && \
+  export PRE_SCRIPT=$PRE_SCRIPT_FILE
+
+[ -n "${POST_SCRIPT_COMMANDS}" ] && \
+  printf '%s\n' "${POST_SCRIPT_COMMANDS[@]}" > $POST_SCRIPT_FILE && \
+  export POST_SCRIPT=$POST_SCRIPT_FILE
+
 # Build packages
 OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost" sabayon-buildpackages $BUILD_ARGS
 local BUILD_STATUS=$?
 [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-build-${JOB_ID}" $DOCKER_BUILDER_TAGGED_IMAGE && docker rm -f "${REPOSITORY_NAME}-build-${JOB_ID}"
+
+[ -n "${PRE_SCRIPT_COMMANDS}" ] && rm -rf $PRE_SCRIPT_FILE
+[ -n "${POST_SCRIPT_COMMANDS}" ] && rm -rf $POST_SCRIPT_FILE
 
 [ "$DOCKERHUB_PUSH" -eq 1 ] && docker push $DOCKER_BUILDER_TAGGED_IMAGE &
 
@@ -373,6 +388,8 @@ cat $YAML_FILE | shyaml get-value repository.maintenance.check_diffs  &>/dev/nul
 cat $YAML_FILE | shyaml get-values build.target &>/dev/null && BUILD_ARGS="$(cat $YAML_FILE | shyaml get-values build.target | xargs echo)"  #mixed toinstall BUILD_ARGS
 cat $YAML_FILE | shyaml get-values build.injected_target &>/dev/null && BUILD_INJECTED_ARGS="$(cat $YAML_FILE | shyaml get-values build.injected_target | xargs echo)"  #mixed toinstall BUILD_ARGS
 cat $YAML_FILE | shyaml get-values build.overlays &>/dev/null && BUILD_ARGS="${BUILD_ARGS} --layman $(cat $YAML_FILE | shyaml get-values build.overlays | xargs echo)" #--layman options
+cat $YAML_FILE | shyaml get-value build.verbose &>/dev/null && export BUILDER_VERBOSE=$(cat $YAML_FILE | shyaml get-value build.verbose | xargs echo)
+
 
 # build.docker.*
 cat $YAML_FILE | shyaml get-value build.docker.image  &>/dev/null && export DOCKER_IMAGE=$(cat $YAML_FILE | shyaml get-value build.docker.image) # DOCKER_IMAGE
@@ -411,6 +428,11 @@ cat $YAML_FILE | shyaml get-values build.equo.package.remove &>/dev/null &&  BUI
 cat $YAML_FILE | shyaml get-values build.equo.package.mask &>/dev/null && export EQUO_MASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.mask | xargs echo)"
 cat $YAML_FILE | shyaml get-values build.equo.package.unmask &>/dev/null && export EQUO_UNMASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.unmask | xargs echo)"
 cat $YAML_FILE | shyaml get-value build.equo.no_cache  &>/dev/null && export ETP_NOCACHE=$(cat $YAML_FILE | shyaml get-value build.equo.no_cache) # ETP_NOCACHE
+
+# build.script.pre
+cat $YAML_FILE | shyaml get-values build.script.pre  &>/dev/null && export PRE_SCRIPT_COMMANDS=$(cat $YAML_FILE | shyaml get-values build.script.pre)
+# build.script.post
+cat $YAML_FILE | shyaml get-values build.script.post  &>/dev/null && export POST_SCRIPT_COMMANDS=$(cat $YAML_FILE | shyaml get-values build.script.post)
 
 export BUILD_ARGS
 export BUILD_INJECTED_ARGS
