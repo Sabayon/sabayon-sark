@@ -7,6 +7,7 @@ export VAGRANT_DIR="${VAGRANT_DIR:-$(pwd)}"
 # Speed up test runs by disabling slow syncs and mirror sorts
 export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
 export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
+export CREATEREPO_PHASE=true
 
 . /sbin/sark-functions.sh
 
