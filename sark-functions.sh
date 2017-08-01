@@ -385,11 +385,11 @@ cat $YAML_FILE | shyaml get-value repository.maintenance.check_diffs  &>/dev/nul
 
 # recompose our BUILD_ARGS
 # build.*
+cat $YAML_FILE | shyaml get-value build.share_workspace &>/dev/null && export SHARE_WORKSPACE=$(cat $YAML_FILE | shyaml get-value build.share_workspace | xargs echo)
 cat $YAML_FILE | shyaml get-values build.target &>/dev/null && BUILD_ARGS="$(cat $YAML_FILE | shyaml get-values build.target | xargs echo)"  #mixed toinstall BUILD_ARGS
 cat $YAML_FILE | shyaml get-values build.injected_target &>/dev/null && BUILD_INJECTED_ARGS="$(cat $YAML_FILE | shyaml get-values build.injected_target | xargs echo)"  #mixed toinstall BUILD_ARGS
 cat $YAML_FILE | shyaml get-values build.overlays &>/dev/null && BUILD_ARGS="${BUILD_ARGS} --layman $(cat $YAML_FILE | shyaml get-values build.overlays | xargs echo)" #--layman options
 cat $YAML_FILE | shyaml get-value build.verbose &>/dev/null && export BUILDER_VERBOSE=$(cat $YAML_FILE | shyaml get-value build.verbose | xargs echo)
-
 
 # build.docker.*
 cat $YAML_FILE | shyaml get-value build.docker.image  &>/dev/null && export DOCKER_IMAGE=$(cat $YAML_FILE | shyaml get-value build.docker.image) # DOCKER_IMAGE
