@@ -150,6 +150,7 @@ local TBZ2s=( $(find ${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost/ -type 
 for i in "${TBZ2s[@]}"
 do
   pkg_hash "$i" ${HASH_OUTPUT}
+  [ -n "$CLEAN_CACHE" ] && [ "$CLEAN_CACHE" -eq 1 ] && rm -rfv "$i"
 done
 cat ${HASH_OUTPUT}
 }
