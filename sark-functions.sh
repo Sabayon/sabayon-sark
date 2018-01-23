@@ -505,6 +505,16 @@ done
 
 [ $REMOVED != 0 ] && generate_repository_metadata
 [ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-removeclean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-removeclean-${JOB_ID}"
+
+local OVERLAY_ARTIFACT_PACKAGES=$(find ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME-binhost/ | grep '.tbz2' | perl -lpe 's:.*-binhost/|\.tb.*::g' | xargs echo)
+local OVERLAY_PACKAGES=$(cat ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME-binhost/Packages | grep 'CPV:' | awk '{ print $2 }' | xargs echo)
+local TO_REMOVE_BINHOST=($(OUTPUT_REMOVED=1 PACKAGES="$OVERLAY_PACKAGES $OVERLAY_ARTIFACT_PACKAGES" sark-version-sanitizer))
+
+for i in "${TO_REMOVE_BINHOST[@]}"
+do
+  rm -rfv "${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost/${i}.tbz2"
+done
+
 }
 
 
