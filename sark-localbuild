@@ -1,0 +1,113 @@
+#!/bin/bash
+set -e
+
+export GENKEY_PHASE=${GENKEY_PHASE:-false} # Disable for default.
+export VAGRANT_DIR="${VAGRANT_DIR:-$(pwd)}"
+export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
+export REPOSITORY_NAME="${REPOSITORY_NAME:-default}"
+
+export DOCKER_OPTS="--cap-add=SYS_PTRACE -t"
+# Speed up test runs by disabling slow syncs and mirror sorts
+export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
+export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
+export CREATEREPO_PHASE=true
+
+. /sbin/sark-functions.sh
+
+if [ ! -e build.yaml ]; then
+    echo "Must be run from a repository directory containing a build.yaml"
+    exit 1
+fi
+
+load_env_from_yaml build.yaml
+
+equo i entropy-server
+
+export OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost"
+export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
+
+NEW_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+OLD_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+
+rm -rfv /usr/portage/packages/* || true
+
+[ -d ${OUTPUT_DIR} ] || mkdir -p "${OUTPUT_DIR}"
+[ "$CHECK_BUILD_DIFFS" -eq 1 ] && packages_hash ${VAGRANT_DIR} $REPOSITORY_NAME $OLD_BINHOST_MD5
+
+# Debug what env vars are being passed to the builder
+printenv | sort
+
+/usr/bin/tini -s -- /usr/sbin/builder $BUILD_ARGS
+
+cp -R /usr/portage/packages/* ${OUTPUT_DIR} || true
+
+ENTROPY_DIR="/${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}"
+
+cat >/etc/entropy/server.conf <<EOF
+# expiration-days = <internal value>
+community-mode = enable
+weak-package-files = disable
+database-format = bz2
+# sync-speed-limit =
+# server-basic-languages = en_US C
+# disabled-eapis = 1,2
+# expiration-based-scope = disable
+# nonfree-packages-directory-support = disable
+rss-feed = enable
+changelog = enable
+rss-name = packages.rss
+rss-base-url = http://packages.sabayon.org/?quicksearch=
+rss-website-url = http://www.sabayon.org/
+max-rss-entries = 10000
+# max-rss-light-entries = 100
+rss-light-name = updates.rss
+managing-editor =
+broken-reverse-deps = disable
+default-repository = $REPOSITORY_NAME
+repository=$REPOSITORY_NAME|$REPOSITORY_DESCRIPTION|file:///${ENTROPY_DIR}
+EOF
+
+entropysrv=$(mktemp)
+createrepo=$(mktemp)
+TEMPDIR=$(mktemp -d)
+EDITOR=cat
+
+# Checking diffs
+if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
+  echo "*** Checking tbz2 diffs ***"
+  # let's do the hash of the tbz2 without xpak data
+  packages_hash ${VAGRANT_DIR}  $REPOSITORY_NAME $NEW_BINHOST_MD5
+  TO_INJECT=($(diff -ru $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 | grep -v -e '^\+[\+]' | grep -e '^\+' | awk '{print $2}'))
+  #if diffs are detected, regenerate the repository
+  if diff -q $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 >/dev/null ; then
+    echo "No changes where detected, repository generation prevented"
+
+    rm -rf $OLD_BINHOST_MD5 $NEW_BINHOST_MD5
+    exit 0
+  else
+    echo "${TO_INJECT[@]} packages needs to be injected"
+    cp -rf "${TO_INJECT[@]}" ${TEMPDIR}/
+  fi
+fi
+
+built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
+mkdir -p ${ENTROPY_DIR}
+[[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
+if [ -d "${ENTROPY_DIR}/standard" ]; then
+  echo "=== Repository already exists, syncronizing ==="
+  eit unlock $REPOSITORY_NAME || true
+  eit pull --quick $REPOSITORY_NAME || true
+  #eit sync \$repo
+else
+  echo "=== Repository is empty, intializing ==="
+  echo "Yes" | eit init --quick $REPOSITORY_NAME
+  eit push --quick --force
+fi
+
+[ -f "${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.key" ] && { ! eit key status ${REPOSITORY_NAME}; } && \
+eit key import ${REPOSITORY_NAME} ${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.key ${VAGRANT_DIR}/confs/${REPOSITORY_NAME}.pub && { eit key sign ${REPOSITORY_NAME} || true; } && { echo "=== Repository key imported successfully ==="; }
+echo "=== Injecting packages ==="
+echo "Yes" | eit inject ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
+echo "Yes Yes Yes" | eit commit --quick
+echo "=== Pushing built packages locally ==="
+eit push --quick --force
