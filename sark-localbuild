@@ -6,11 +6,18 @@ export VAGRANT_DIR="${VAGRANT_DIR:-$(pwd)}"
 export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
 export REPOSITORY_NAME="${REPOSITORY_NAME:-default}"
 export LC_ALL=en_US.UTF-8
-export DOCKER_OPTS="--cap-add=SYS_PTRACE -t"
 # Speed up test runs by disabling slow syncs and mirror sorts
 export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
 export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
 export CREATEREPO_PHASE=true
+export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
+export SAB_ARCH="${SAB_ARCH:-intel}"
+export MAKE_CONF="${MAKE_CONF:-}"
+
+if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
+  echo "You specified a make.conf. I hope you know what are you doing"
+  export MAKE_CONF="${MAKE_CONF:-$SAB_WORKSPACE/specs/make.conf}"
+fi
 
 . /sbin/sark-functions.sh
 
@@ -32,11 +39,42 @@ rm -rfv /usr/portage/packages/* || true
 [ -d ${OUTPUT_DIR} ] || mkdir -p "${OUTPUT_DIR}"
 [ "$CHECK_BUILD_DIFFS" -eq 1 ] && packages_hash ${VAGRANT_DIR} $REPOSITORY_NAME $OLD_BINHOST_MD5
 
+[ -z "$PORTAGE_CACHE" ] || [ -d "$PORTAGE_CACHE" ] && cp -rfv $PORTAGE_CACHE /usr/portage
+[ -z "$DISTFILES" ] || [ -d "$PORTAGE_CACHE" ] && cp -rfv $DISTFILES /usr/portage/distfiles
+[ -z "$ENTROPY_DOWNLOADED_PACKAGES" ] || [ -d "$ENTROPY_DOWNLOADED_PACKAGES" ] && cp -rfv $ENTROPY_DOWNLOADED_PACKAGES /var/lib/entropy/client/packages
+[ -d "$LOCAL_OVERLAY" ] && cp -rfv $LOCAL_OVERLAY /usr/local/local_portage
+
+PRE_SCRIPT_FILE=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+POST_SCRIPT_FILE=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+
+# Prepare and post script
+[ -n "${PRE_SCRIPT_COMMANDS}" ] && \
+  printf '%s\n' "${PRE_SCRIPT_COMMANDS[@]}" > $PRE_SCRIPT_FILE && \
+  cp -rfv $PRE_SCRIPT_FILE /pre-script
+
+[ -n "${POST_SCRIPT_COMMANDS}" ] && \
+  printf '%s\n' "${POST_SCRIPT_COMMANDS[@]}" > $POST_SCRIPT_FILE && \
+  cp -rfv $POST_SCRIPT_FILE /post-script
+
+if [ -d "$SAB_WORKSPACE"/specs ]; then
+  echo "Specs found"
+  [ -e "$SAB_WORKSPACE"/specs/custom.mask ] && cp -rfv "$SAB_WORKSPACE/specs/custom.mask" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.mask/99-custom.mask"
+  [ -e "$SAB_WORKSPACE"/specs/custom.unmask ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.unmask" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.unmask/99-custom.unmask"
+  [ -e "$SAB_WORKSPACE"/specs/custom.use ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.use" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.use/99-custom.use"
+  [ -e "$SAB_WORKSPACE"/specs/custom.env ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.env" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.env"
+  [ -e "$SAB_WORKSPACE"/specs/custom.keywords ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.keywords" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.keywords/99-custom.keywords"
+  [ -d "$SAB_WORKSPACE"/specs/env ] &&  cp -rfv "$SAB_WORKSPACE/specs/env/" "/opt/sabayon-build/conf/$SAB_ARCH/portage/env/"
+fi
+
 # Debug what env vars are being passed to the builder
 printenv | sort
 
-/usr/bin/tini -s -- /usr/sbin/builder $BUILD_ARGS
+pushd /
+  /usr/bin/tini -s -- /usr/sbin/builder $BUILD_ARGS
+popd
 
+rm -rf $PRE_SCRIPT_FILE
+rm -rf $POST_SCRIPT_FILE
 cp -R /usr/portage/packages/* ${OUTPUT_DIR} || true
 
 ENTROPY_DIR="/${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}"
