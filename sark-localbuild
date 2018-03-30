@@ -13,6 +13,7 @@ export CREATEREPO_PHASE=true
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 export MAKE_CONF="${MAKE_CONF:-}"
+export LOCAL_OVERLAY="${LOCAL_OVERLAY:-$SAB_WORKSPACE/local_overlay}"
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
   echo "You specified a make.conf. I hope you know what are you doing"
