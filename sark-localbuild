@@ -4,7 +4,6 @@ set -e
 export GENKEY_PHASE=${GENKEY_PHASE:-false} # Disable for default.
 export VAGRANT_DIR="${VAGRANT_DIR:-$(pwd)}"
 export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
-export REPOSITORY_NAME="${REPOSITORY_NAME:-default}"
 export LC_ALL=en_US.UTF-8
 # Speed up test runs by disabling slow syncs and mirror sorts
 export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
