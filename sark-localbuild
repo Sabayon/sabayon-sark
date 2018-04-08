@@ -11,6 +11,7 @@ export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 export MAKE_CONF="${MAKE_CONF:-}"
 export LOCAL_OVERLAY="${LOCAL_OVERLAY:-$SAB_WORKSPACE/local_overlay}"
+export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
   echo "You specified a make.conf. I hope you know what are you doing"
@@ -19,12 +20,12 @@ fi
 
 . /sbin/sark-functions.sh
 
-if [ ! -e build.yaml ]; then
-    echo "Must be run from a repository directory containing a build.yaml"
+if [ ! -e ${SAB_BUILDFILE} ]; then
+    echo "Must be run from a repository directory containing a ${SAB_BUILDFILE}"
     exit 1
 fi
 
-load_env_from_yaml build.yaml
+load_env_from_yaml ${SAB_BUILDFILE}
 
 export OUTPUT_DIR="${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost"
 export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
