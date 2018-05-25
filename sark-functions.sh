@@ -36,6 +36,8 @@ export DOCKERHUB_PUSH="${DOCKERHUB_PUSH:-0}"
 export ETP_NOCACHE="${ETP_NOCACHE:-1}"
 export CLEAN_CACHE="${CLEAN_CACHE:-0}"
 export PRETEND="${PRETEND:-0}"
+export PKGS_CHECKER_OPTS="{$PKGS_CHECKER_OPTS:-L ERROR}"
+export PKGS_CHECKER_BIN="${PKGS_CHECKER_BIN:-pkgs-checker}"
 
 URI_BASE="${URI_BASE:-http://mirror.de.sabayon.org/community/}"
 
@@ -123,35 +125,24 @@ deploy "${VAGRANT_DIR}/repositories/${REPO}/entropy_artifacts" "$DEPLOY_SERVER" 
 deploy "${VAGRANT_DIR}/logs/" "$DEPLOY_SERVER_BUILDLOGS" "$DEPLOY_PORT"
 }
 
-pkg_hash() {
-local PKG="${1}"
-local HASHFILE="${2}"
-local PKG_TMP=$(mktemp -t "$(basename $0).XXXXXXXXXX")
-echo "[-] Calculating hash for $PKG"
-
-#yeah, it is slow, but other methods tried so far just failed.
-bunzip2 -c < "$PKG" | tar -xO | gzip -nc > "$PKG_TMP"
-local HASH=$(gzip -lv "$PKG_TMP" | awk '{if(NR>1)print $2}')
-
-echo "$HASH" "$PKG" >> $HASHFILE
-rm -rf $PKG_TMP
-}
-
 packages_hash() {
-local VAGRANT_DIR="${1}"
-local REPOSITORY_NAME="${2}"
-local HASH_OUTPUT="${3}"
+  local VAGRANT_DIR="${1}"
+  local REPOSITORY_NAME="${2}"
+  local HASH_OUTPUT="${3}"
 
-# cksum '{}' | awk '{ print \$10 \$2 \$3 }'
+  # cksum '{}' | awk '{ print \$10 \$2 \$3 }'
 
-echo "[*] Creating hash for $REPOSITORY_NAME in $VAGRANT_DIR at $HASH_OUTPUT"
-# let's do the hash of the tbz2 without xpak data
-local TBZ2s=( $(find ${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost/ -type f -iname '*.tbz2' | sort) )
-for i in "${TBZ2s[@]}"
-do
-  pkg_hash "$i" ${HASH_OUTPUT}
-done
-cat ${HASH_OUTPUT}
+  echo "[*] Creating hash for $REPOSITORY_NAME in $VAGRANT_DIR at $HASH_OUTPUT"
+  # let's do the hash of the tbz2 without xpak data
+  local dir=${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost/
+  # Exclude .pyc/.pyo object from hashing"
+  local checker_opts="-e .pyc -e .pyo -e .mo"
+  # Exclude .bz2 for man files with timestamp string
+  checker_opts="${checker_opts} -e .bz2"
+
+  ${PKGS_CHECKER_BIN} ${checker_opts} ${PKGS_CHECKER_OPTS} -d ${dir} -f ${HASH_OUTPUT}
+
+  cat ${HASH_OUTPUT}
 }
 
 function get_image(){
