@@ -114,6 +114,7 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
   # let's do the hash of the tbz2 without xpak data
   packages_hash ${SAB_WORKSPACE}  $REPOSITORY_NAME $NEW_BINHOST_MD5
   TO_INJECT=($(diff -ru $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 | grep -v -e '^\+[\+]' | grep -e '^\+' | awk '{print $2}'))
+
   #if diffs are detected, regenerate the repository
   if diff -q $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 >/dev/null ; then
     echo "No changes where detected, repository generation prevented"
@@ -121,14 +122,22 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
     rm -rf $OLD_BINHOST_MD5 $NEW_BINHOST_MD5
     exit 0
   else
+    TBZ2_DIR=${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost
     echo "${TO_INJECT[@]} packages needs to be injected"
-    cp -rf "${TO_INJECT[@]}" ${TEMPDIR}/
+    for ((i=0; i<${#TO_INJECT[@]}; i++)) ; do
+      echo "Copying ${TO_INJECT[$i]} to ${TEMPDIR}..."
+      cp -rf "${TBZ2_DIR}"/${TO_INJECT[$i]} ${TEMPDIR}/
+    done
   fi
 fi
 
 built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
 mkdir -p ${ENTROPY_DIR}
 [[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
+
+echo "=== Update config files ==="
+echo -9 | equo conf update
+
 if [ -d "${ENTROPY_DIR}/standard" ]; then
   echo "=== Repository already exists, syncronizing ==="
   eit unlock $REPOSITORY_NAME || true
@@ -143,7 +152,10 @@ fi
 [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key" ] && { ! eit key status ${REPOSITORY_NAME}; } && \
 eit key import ${REPOSITORY_NAME} ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub && { eit key sign ${REPOSITORY_NAME} || true; } && { echo "=== Repository key imported successfully ==="; }
 echo "=== Injecting packages ==="
-echo "Yes Yes Yes" | eit inject ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
-echo "Yes Yes Yes" | eit commit --quick
+eit inject --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
+echo "=== Inject COMPLETED ====="
+eit commit --quick
 echo "=== Pushing built packages locally ==="
 eit push --quick --force
+
+echo "=== ALL DONE. bye ==="
