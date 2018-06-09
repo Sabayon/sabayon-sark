@@ -404,7 +404,7 @@ cat $YAML_FILE | shyaml get-values build.emerge.remove_layman_overlay &>/dev/nul
 cat $YAML_FILE | shyaml get-value build.qa_checks &>/dev/null && export QA_CHECKS=$(cat $YAML_FILE | shyaml get-value build.qa_checks) # QA_CHECKS, default 0
 
 # build.equo.*
-cat $YAML_FILE | shyaml get-value build.equo.enman_self &>/dev/null && export ENMAN_ADD_SELF=$(cat $YAML_FILE | shyaml get-values build.equo.enman_self) # ENMAN_ADD_SELF, default 1.
+cat $YAML_FILE | shyaml get-value build.equo.enman_self &>/dev/null && export ENMAN_ADD_SELF=$(cat $YAML_FILE | shyaml get-value build.equo.enman_self) # ENMAN_ADD_SELF, default 1.
 cat $YAML_FILE | shyaml get-value build.equo.repositories  &>/dev/null && export ENMAN_REPOSITORIES=$(cat $YAML_FILE | shyaml get-values build.equo.repositories) # ENMAN_REPOSITORIES
 cat $YAML_FILE | shyaml get-value build.equo.remove_repositories &>/dev/null && export REMOVE_ENMAN_REPOSITORIES=$(cat $YAML_FILE | shyaml get-values build.equo.remove_repositories) # REMOVE_ENMAN_REPOSITORIES
 cat $YAML_FILE | shyaml get-value build.equo.repository  &>/dev/null && export ENTROPY_REPOSITORY=$(cat $YAML_FILE | shyaml get-value build.equo.repository) # ENTROPY_REPOSITORY
