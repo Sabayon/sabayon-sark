@@ -11,6 +11,12 @@ export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 export MAKE_CONF="${MAKE_CONF:-}"
 export LOCAL_OVERLAY="${LOCAL_OVERLAY:-$SAB_WORKSPACE/local_overlay}"
+export SKIP_COMMIT="${SKIP_COMMIT:-0}"
+export SKIP_PUSH="${SKIP_PUSH:-0}"
+export REPO_RESET="${RESET_REPO:-0}"
+export REPO_CLEAN_EXPIRE="${REPO_CLEAN_EXPIRE:-0}"
+export REPO_CLEAN_EXPIRE_DAYS="${REPO_CLEAN_EXPIRE_DAYS:-1}"
+
 export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
@@ -68,15 +74,6 @@ fi
 # Debug what env vars are being passed to the builder
 printenv | sort
 
-pushd /
-  /usr/bin/tini -s -- /usr/sbin/builder $BUILD_ARGS
-popd
-[ "$CREATEREPO_PHASE" = false ] && exit $?
-
-rm -rf $PRE_SCRIPT_FILE
-rm -rf $POST_SCRIPT_FILE
-cp -R /usr/portage/packages/* ${OUTPUT_DIR} || true
-
 ENTROPY_DIR="/${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}"
 
 cat >/etc/entropy/server.conf <<EOF
@@ -108,12 +105,23 @@ createrepo=$(mktemp)
 TEMPDIR=$(mktemp -d)
 export EDITOR=cat
 
+pushd /
+  /usr/bin/tini -s -- ${SAB_WORKSPACE}/builder $BUILD_ARGS
+popd
+[ "$CREATEREPO_PHASE" = false ] && exit $?
+
+rm -rf $PRE_SCRIPT_FILE
+rm -rf $POST_SCRIPT_FILE
+cp -R /usr/portage/packages/* ${OUTPUT_DIR} || true
+
 # Checking diffs
 if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
   echo "*** Checking tbz2 diffs ***"
   # let's do the hash of the tbz2 without xpak data
   packages_hash ${SAB_WORKSPACE}  $REPOSITORY_NAME $NEW_BINHOST_MD5
   TO_INJECT=($(diff -ru $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 | grep -v -e '^\+[\+]' | grep -e '^\+' | awk '{print $2}'))
+
+  echo "INJECT RESULT = ${TO_INJECT[@]}"
 
   #if diffs are detected, regenerate the repository
   if diff -q $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 >/dev/null ; then
@@ -131,31 +139,52 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
   fi
 fi
 
-built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
 mkdir -p ${ENTROPY_DIR}
+
+built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
 [[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
+if [ -d "${ENTROPY_DIR}/standard" ]; then
+
+  if [ $SKIP_PULL -eq 0 ] ; then
+    echo "=== Repository already exists, syncronizing ==="
+    eit unlock $REPOSITORY_NAME || true
+    eit pull --quick $REPOSITORY_NAME || true
+  fi
+#  #eit sync \$repo
+else
+  echo "=== Repository is empty, intializing ==="
+  echo "Yes" | eit init --quick $REPOSITORY_NAME
+  eit push --quick --force ${REPOSITORY_NAME}
+fi
 
 echo "=== Update config files ==="
 echo -9 | equo conf update
 
-if [ -d "${ENTROPY_DIR}/standard" ]; then
-  echo "=== Repository already exists, syncronizing ==="
-  eit unlock $REPOSITORY_NAME || true
-  eit pull --quick $REPOSITORY_NAME || true
-  #eit sync \$repo
-else
-  echo "=== Repository is empty, intializing ==="
-  echo "Yes" | eit init --quick $REPOSITORY_NAME
-  eit push --quick --force
+if [ ${RESET_REPO} -eq 1 ] ; then
+  # This is needed 
+  echo "=== Reset Repository Revision ==="
+  eit reset --quick --local ${REPOSITORY_NAME}
+  echo "=== Reset COMPLETED ==="
 fi
 
 [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key" ] && { ! eit key status ${REPOSITORY_NAME}; } && \
 eit key import ${REPOSITORY_NAME} ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub && { eit key sign ${REPOSITORY_NAME} || true; } && { echo "=== Repository key imported successfully ==="; }
 echo "=== Injecting packages ==="
-eit inject --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
+echo "INJECT = ${built_pkgs}"
+eit inject --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
+
 echo "=== Inject COMPLETED ====="
-eit commit --quick
+if [ ${SKIP_COMMIT} -eq 0 ] ; then
+  echo "=== Commit packages ====="
+  eit commit --quick
+  echo "=== Commit COMPLETED ====="
+fi
 echo "=== Pushing built packages locally ==="
-eit push --quick --force
+eit push --quick --force ${REPOSITORY_NAME}
+
+if [ ${REPO_CLEAN_EXPIRE} -eq 1 ] ; then
+  echo "=== Clean expire packages ==="
+  eit vacuum --quick --days ${REPO_CLEAN_EXPIRE_DAYS} ${REPOSITORY_NAME}
+fi
 
 echo "=== ALL DONE. bye ==="
