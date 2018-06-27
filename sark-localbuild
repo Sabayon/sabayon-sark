@@ -18,6 +18,7 @@ export REPO_CLEAN_EXPIRE="${REPO_CLEAN_EXPIRE:-0}"
 export REPO_CLEAN_EXPIRE_DAYS="${REPO_CLEAN_EXPIRE_DAYS:-1}"
 
 export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
+export SAB_BUILDER=${SAB_BUILDER:-/usr/sbin/builder}
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
   echo "You specified a make.conf. I hope you know what are you doing"
@@ -106,7 +107,7 @@ TEMPDIR=$(mktemp -d)
 export EDITOR=cat
 
 pushd /
-  /usr/bin/tini -s -- ${SAB_WORKSPACE}/builder $BUILD_ARGS
+  /usr/bin/tini -s -- ${SAB_BUILDER} $BUILD_ARGS
 popd
 [ "$CREATEREPO_PHASE" = false ] && exit $?
 
