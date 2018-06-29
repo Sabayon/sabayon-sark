@@ -188,4 +188,6 @@ if [ ${REPO_CLEAN_EXPIRE} -eq 1 ] ; then
   eit vacuum --quick --days ${REPO_CLEAN_EXPIRE_DAYS} ${REPOSITORY_NAME}
 fi
 
+VAGRANT_DIR=$SAB_WORKSPACE generate_repository_metadata
+
 echo "=== ALL DONE. bye ==="
