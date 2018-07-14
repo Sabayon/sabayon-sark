@@ -182,6 +182,7 @@ if [ ${SKIP_COMMIT} -eq 0 ] ; then
 fi
 echo "=== Pushing built packages locally ==="
 eit push --quick --force ${REPOSITORY_NAME}
+[ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key" ] && rm -rf /etc/entropy/gpg-keys
 
 if [ ${REPO_CLEAN_EXPIRE} -eq 1 ] ; then
   echo "=== Clean expire packages ==="
