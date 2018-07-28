@@ -364,66 +364,110 @@ package_remove() {
 OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}" sabayon-createrepo-remove "$@"
 }
 
+set_var_from_yaml_if_nonempty() {
+	local _YAML_FILE=$1
+	shift
+
+	local _do_export=0
+	local _do_postprocess=0
+
+	while true; do
+		case $1 in
+		-e)
+			_do_export=1
+			shift
+			;;
+		-p)
+			_do_postprocess=1
+			shift
+			;;
+		*)
+			break
+			;;
+		esac
+	done
+
+	local _shyaml_cmd=$1
+	local _key=$2
+	# Make sure it doesn't clash with this function's variable or there's a bug.
+	# (Variables in this function start with _, so best to avoid such ones.)
+	local _out_var=$3
+
+	# Using eval, so...
+	[[ $_out_var =~ ^[A-Za-z0-9_]+$ ]] || { echo "no way: '$_out_var'"; exit 1; }
+
+	local _tmp
+	_tmp=$(cat "$_YAML_FILE" | shyaml "$_shyaml_cmd" "$_key" 2> /dev/null)
+
+	if [[ -n $_tmp ]]; then
+		[[ $_do_postprocess = 1 ]] && _tmp=$(echo "$_tmp" | xargs echo)
+		eval "$_out_var=\$_tmp"
+		[[ $_do_export = 1 ]] && export "$_out_var"
+	fi
+	return 0
+}
+
 load_env_from_yaml() {
 local YAML_FILE=$1
+local tmp
 
 # repository.*
-cat $YAML_FILE | shyaml get-value repository.description  &>/dev/null && export REPOSITORY_DESCRIPTION=$(cat $YAML_FILE | shyaml get-value repository.description)  # REPOSITORY_DESCRIPTION
-cat $YAML_FILE | shyaml get-value repository.maintenance.keep_previous_versions  &>/dev/null && export KEEP_PREVIOUS_VERSIONS=$(cat $YAML_FILE | shyaml get-value repository.maintenance.keep_previous_versions) # KEEP_PREVIOUS_VERSIONS
-cat $YAML_FILE | shyaml get-values repository.maintenance.remove  &>/dev/null && export TOREMOVE="$(cat $YAML_FILE | shyaml get-values repository.maintenance.remove | xargs echo)" # replaces package_remove
-cat $YAML_FILE | shyaml get-value repository.maintenance.clean_cache  &>/dev/null && export CLEAN_CACHE=$(cat $YAML_FILE | shyaml get-value repository.maintenance.clean_cache) # CLEAN_CACHE
-cat $YAML_FILE | shyaml get-value repository.maintenance.check_diffs  &>/dev/null && export CHECK_BUILD_DIFFS=$(cat $YAML_FILE | shyaml get-value repository.maintenance.check_diffs) # CHECK_BUILD_DIFFS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.description REPOSITORY_DESCRIPTION  # REPOSITORY_DESCRIPTION
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.keep_previous_versions KEEP_PREVIOUS_VERSIONS # KEEP_PREVIOUS_VERSIONS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values repository.maintenance.remove TOREMOVE # replaces package_remove
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.clean_cache CLEAN_CACHE # CLEAN_CACHE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.check_diffs CHECK_BUILD_DIFFS # CHECK_BUILD_DIFFS
 
 # recompose our BUILD_ARGS
 # build.*
-cat $YAML_FILE | shyaml get-value build.share_workspace &>/dev/null && export SHARE_WORKSPACE=$(cat $YAML_FILE | shyaml get-value build.share_workspace | xargs echo)
-cat $YAML_FILE | shyaml get-values build.target &>/dev/null && BUILD_ARGS="$(cat $YAML_FILE | shyaml get-values build.target | xargs echo)"  #mixed toinstall BUILD_ARGS
-cat $YAML_FILE | shyaml get-values build.injected_target &>/dev/null && BUILD_INJECTED_ARGS="$(cat $YAML_FILE | shyaml get-values build.injected_target | xargs echo)"  #mixed toinstall BUILD_ARGS
-cat $YAML_FILE | shyaml get-values build.overlays &>/dev/null && BUILD_ARGS="${BUILD_ARGS} --layman $(cat $YAML_FILE | shyaml get-values build.overlays | xargs echo)" #--layman options
-cat $YAML_FILE | shyaml get-value build.verbose &>/dev/null && export BUILDER_VERBOSE=$(cat $YAML_FILE | shyaml get-value build.verbose | xargs echo)
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.share_workspace SHARE_WORKSPACE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.injected_target BUILD_INJECTED_ARGS  #mixed toinstall BUILD_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.overlays tmp; [[ -n ${tmp} ]] && BUILD_ARGS="${BUILD_ARGS} --layman ${tmp}" #--layman options
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.verbose BUILDER_VERBOSE
 
 # build.docker.*
-cat $YAML_FILE | shyaml get-value build.docker.image  &>/dev/null && export DOCKER_IMAGE=$(cat $YAML_FILE | shyaml get-value build.docker.image) # DOCKER_IMAGE
-cat $YAML_FILE | shyaml get-value build.docker.entropy_image  &>/dev/null && export DOCKER_EIT_IMAGE=$(cat $YAML_FILE | shyaml get-value build.docker.entropy_image) # DOCKER_EIT_IMAGE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.docker.image DOCKER_IMAGE # DOCKER_IMAGE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.docker.entropy_image DOCKER_EIT_IMAGE # DOCKER_EIT_IMAGE
 
 # build.emerge.*
-cat $YAML_FILE | shyaml get-value build.emerge.default_args  &>/dev/null && export EMERGE_DEFAULTS_ARGS=$(cat $YAML_FILE | shyaml get-value build.emerge.default_args) # EMERGE_DEFAULTS_ARGS
-cat $YAML_FILE | shyaml get-value build.emerge.split_install  &>/dev/null && export EMERGE_SPLIT_INSTALL=$(cat $YAML_FILE | shyaml get-value build.emerge.split_install) # EMERGE_SPLIT_INSTALL
-cat $YAML_FILE | shyaml get-value build.emerge.features  &>/dev/null && export FEATURES=$(cat $YAML_FILE | shyaml get-value build.emerge.features) # FEATURES
-cat $YAML_FILE | shyaml get-value build.emerge.profile  &>/dev/null && export BUILDER_PROFILE=$(cat $YAML_FILE | shyaml get-value build.emerge.profile) # BUILDER_PROFILE
-cat $YAML_FILE | shyaml get-value build.emerge.jobs  &>/dev/null && export BUILDER_JOBS=$(cat $YAML_FILE | shyaml get-value build.emerge.jobs) # BUILDER_JOBS
-cat $YAML_FILE | shyaml get-value build.emerge.preserved_rebuild  &>/dev/null && export PRESERVED_REBUILD=$(cat $YAML_FILE | shyaml get-value build.emerge.preserved_rebuild) # PRESERVED_REBUILD
-cat $YAML_FILE | shyaml get-value build.emerge.skip_sync  &>/dev/null && export SKIP_PORTAGE_SYNC=$(cat $YAML_FILE | shyaml get-value build.emerge.skip_sync) # SKIP_PORTAGE_SYNC
-cat $YAML_FILE | shyaml get-value build.emerge.webrsync  &>/dev/null && export WEBRSYNC=$(cat $YAML_FILE | shyaml get-value build.emerge.webrsync) # WEBRSYNC
-cat $YAML_FILE | shyaml get-values build.emerge.remove &>/dev/null && export EMERGE_REMOVE="$(cat $YAML_FILE | shyaml get-values build.emerge.remove | xargs echo)"
-cat $YAML_FILE | shyaml get-values build.emerge.remote_overlay &>/dev/null && export REMOTE_OVERLAY="$(cat $YAML_FILE | shyaml get-values build.emerge.remote_overlay | xargs echo)"
-cat $YAML_FILE | shyaml get-value build.emerge.remote_conf_portdir &>/dev/null && export REMOTE_CONF_PORTDIR="$(cat $YAML_FILE | shyaml get-value build.emerge.remote_conf_portdir)"
-cat $YAML_FILE | shyaml get-value build.emerge.remote_portdir &>/dev/null && export REMOTE_PORTDIR="$(cat $YAML_FILE | shyaml get-value build.emerge.remote_portdir)"
-cat $YAML_FILE | shyaml get-values build.emerge.remove_remote_overlay &>/dev/null && export REMOVE_REMOTE_OVERLAY="$(cat $YAML_FILE | shyaml get-values build.emerge.remove_remote_overlay | xargs echo)"
-cat $YAML_FILE | shyaml get-values build.emerge.remove_layman_overlay &>/dev/null && export REMOVE_LAYMAN_OVERLAY="$(cat $YAML_FILE | shyaml get-values build.emerge.remove_layman_overlay | xargs echo)"
-cat $YAML_FILE | shyaml get-value build.qa_checks &>/dev/null && export QA_CHECKS=$(cat $YAML_FILE | shyaml get-value build.qa_checks) # QA_CHECKS, default 0
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.default_args EMERGE_DEFAULTS_ARGS # EMERGE_DEFAULTS_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.split_install EMERGE_SPLIT_INSTALL # EMERGE_SPLIT_INSTALL
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.features FEATURES # FEATURES
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.profile BUILDER_PROFILE # BUILDER_PROFILE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.jobs BUILDER_JOBS # BUILDER_JOBS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.preserved_rebuild PRESERVED_REBUILD # PRESERVED_REBUILD
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.skip_sync SKIP_PORTAGE_SYNC # SKIP_PORTAGE_SYNC
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.webrsync WEBRSYNC # WEBRSYNC
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.emerge.remove EMERGE_REMOVE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.emerge.remote_overlay REMOTE_OVERLAY
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.remote_conf_portdir REMOTE_CONF_PORTDIR
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.emerge.remote_portdir REMOTE_PORTDIR
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.emerge.remove_remote_overlay REMOVE_REMOTE_OVERLAY
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.emerge.remove_layman_overlay REMOVE_LAYMAN_OVERLAY
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.qa_checks QA_CHECKS # QA_CHECKS, default 0
 
 # build.equo.*
-cat $YAML_FILE | shyaml get-value build.equo.enman_self &>/dev/null && export ENMAN_ADD_SELF=$(cat $YAML_FILE | shyaml get-value build.equo.enman_self) # ENMAN_ADD_SELF, default 1.
-cat $YAML_FILE | shyaml get-value build.equo.repositories  &>/dev/null && export ENMAN_REPOSITORIES=$(cat $YAML_FILE | shyaml get-values build.equo.repositories) # ENMAN_REPOSITORIES
-cat $YAML_FILE | shyaml get-value build.equo.remove_repositories &>/dev/null && export REMOVE_ENMAN_REPOSITORIES=$(cat $YAML_FILE | shyaml get-values build.equo.remove_repositories) # REMOVE_ENMAN_REPOSITORIES
-cat $YAML_FILE | shyaml get-value build.equo.repository  &>/dev/null && export ENTROPY_REPOSITORY=$(cat $YAML_FILE | shyaml get-value build.equo.repository) # ENTROPY_REPOSITORY
-cat $YAML_FILE | shyaml get-value build.equo.dependency_install.enable  &>/dev/null && export USE_EQUO=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.enable) # USE_EQUO
-cat $YAML_FILE | shyaml get-value build.equo.dependency_install.install_atoms  &>/dev/null && export EQUO_INSTALL_ATOMS=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.install_atoms) # EQUO_INSTALL_ATOMS
-cat $YAML_FILE | shyaml get-value build.equo.dependency_install.dependency_scan_depth  &>/dev/null && export DEPENDENCY_SCAN_DEPTH=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.dependency_scan_depth) # DEPENDENCY_SCAN_DEPTH
-cat $YAML_FILE | shyaml get-value build.equo.dependency_install.prune_virtuals &>/dev/null && export PRUNE_VIRTUALS=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.prune_virtuals) # PRUNE_VIRTUALS
-cat $YAML_FILE | shyaml get-value build.equo.dependency_install.install_version  &>/dev/null && export EQUO_INSTALL_VERSION=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.install_version) # EQUO_INSTALL_VERSION
-cat $YAML_FILE | shyaml get-value build.equo.dependency_install.split_install  &>/dev/null && export EQUO_SPLIT_INSTALL=$(cat $YAML_FILE | shyaml get-value build.equo.dependency_install.split_install) # EQUO_SPLIT_INSTALL
-cat $YAML_FILE | shyaml get-values build.equo.package.install &>/dev/null &&  BUILD_ARGS="${BUILD_ARGS} --install $(cat $YAML_FILE | shyaml get-values build.equo.package.install | xargs echo)"  #mixed --install BUILD_ARGS
-cat $YAML_FILE | shyaml get-values build.equo.package.remove &>/dev/null &&  BUILD_ARGS="${BUILD_ARGS} --remove $(cat $YAML_FILE | shyaml get-values build.equo.package.remove | xargs echo)"  #mixed --remove BUILD_ARGS
-cat $YAML_FILE | shyaml get-values build.equo.package.mask &>/dev/null && export EQUO_MASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.mask | xargs echo)"
-cat $YAML_FILE | shyaml get-values build.equo.package.unmask &>/dev/null && export EQUO_UNMASKS="$(cat $YAML_FILE | shyaml get-values build.equo.package.unmask | xargs echo)"
-cat $YAML_FILE | shyaml get-value build.equo.no_cache  &>/dev/null && export ETP_NOCACHE=$(cat $YAML_FILE | shyaml get-value build.equo.no_cache) # ETP_NOCACHE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.enman_self ENMAN_ADD_SELF # ENMAN_ADD_SELF, default 1.
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-values build.equo.repositories ENMAN_REPOSITORIES # ENMAN_REPOSITORIES
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-values build.equo.remove_repositories REMOVE_ENMAN_REPOSITORIES # REMOVE_ENMAN_REPOSITORIES
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.repository ENTROPY_REPOSITORY # ENTROPY_REPOSITORY
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.enable USE_EQUO # USE_EQUO
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.install_atoms EQUO_INSTALL_ATOMS # EQUO_INSTALL_ATOMS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.dependency_scan_depth DEPENDENCY_SCAN_DEPTH # DEPENDENCY_SCAN_DEPTH
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.prune_virtuals PRUNE_VIRTUALS # PRUNE_VIRTUALS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.install_version EQUO_INSTALL_VERSION # EQUO_INSTALL_VERSION
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.split_install EQUO_SPLIT_INSTALL # EQUO_SPLIT_INSTALL
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.equo.package.install tmp; [[ -n ${tmp} ]] && BUILD_ARGS="${BUILD_ARGS} --install ${tmp}"  #mixed --install BUILD_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.equo.package.remove tmp; [[ -n ${tmp} ]] && BUILD_ARGS="${BUILD_ARGS} --remove ${tmp}"   #mixed --remove BUILD_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.equo.package.mask EQUO_MASKS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.equo.package.unmask EQUO_UNMASKS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.no_cache ETP_NOCACHE # ETP_NOCACHE
 
 # build.script.pre
-cat $YAML_FILE | shyaml get-values build.script.pre  &>/dev/null && export PRE_SCRIPT_COMMANDS=$(cat $YAML_FILE | shyaml get-values build.script.pre)
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-values build.script.pre PRE_SCRIPT_COMMANDS
 # build.script.post
-cat $YAML_FILE | shyaml get-values build.script.post  &>/dev/null && export POST_SCRIPT_COMMANDS=$(cat $YAML_FILE | shyaml get-values build.script.post)
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-values build.script.post POST_SCRIPT_COMMANDS
 
 export BUILD_ARGS
 export BUILD_INJECTED_ARGS
