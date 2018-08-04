@@ -36,7 +36,7 @@ export DOCKERHUB_PUSH="${DOCKERHUB_PUSH:-0}"
 export ETP_NOCACHE="${ETP_NOCACHE:-1}"
 export CLEAN_CACHE="${CLEAN_CACHE:-0}"
 export PRETEND="${PRETEND:-0}"
-export PKGS_CHECKER_OPTS="{$PKGS_CHECKER_OPTS:-L ERROR -v -c}"
+export PKGS_CHECKER_OPTS="${PKGS_CHECKER_OPTS:--L ERROR -c -v}"
 export PKGS_CHECKER_BIN="${PKGS_CHECKER_BIN:-pkgs-checker}"
 
 URI_BASE="${URI_BASE:-http://mirror.de.sabayon.org/community/}"
