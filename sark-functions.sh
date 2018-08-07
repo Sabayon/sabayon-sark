@@ -397,7 +397,7 @@ set_var_from_yaml_if_nonempty() {
 	[[ $_out_var =~ ^[A-Za-z0-9_]+$ ]] || { echo "no way: '$_out_var'"; exit 1; }
 
 	local _tmp
-	_tmp=$(cat "$_YAML_FILE" | shyaml "$_shyaml_cmd" "$_key" 2> /dev/null)
+	_tmp=$(cat "$_YAML_FILE" | shyaml "$_shyaml_cmd" "$_key" 2> /dev/null) || true
 
 	if [[ -n $_tmp ]]; then
 		[[ $_do_postprocess = 1 ]] && _tmp=$(echo "$_tmp" | xargs echo)
