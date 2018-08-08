@@ -13,7 +13,7 @@ export MAKE_CONF="${MAKE_CONF:-}"
 export LOCAL_OVERLAY="${LOCAL_OVERLAY:-$SAB_WORKSPACE/local_overlay}"
 export SKIP_COMMIT="${SKIP_COMMIT:-0}"
 export SKIP_PUSH="${SKIP_PUSH:-0}"
-export REPO_RESET="${RESET_REPO:-0}"
+export REPO_RESET="${REPO_RESET:-0}"
 export REPO_CLEAN_EXPIRE="${REPO_CLEAN_EXPIRE:-0}"
 export REPO_CLEAN_EXPIRE_DAYS="${REPO_CLEAN_EXPIRE_DAYS:-1}"
 
@@ -161,7 +161,7 @@ fi
 echo "=== Update config files ==="
 echo -9 | equo conf update
 
-if [ ${RESET_REPO} -eq 1 ] ; then
+if [ ${REPO_RESET} -eq 1 ] ; then
   # This is needed 
   echo "=== Reset Repository Revision ==="
   eit reset --quick --local ${REPOSITORY_NAME}
