@@ -27,7 +27,7 @@ export FEATURES="parallel-fetch protect-owned userpriv -distcc -distcc-pump -spl
 export WEBRSYNC="${WEBRSYNC:-1}"
 export REPOSITORY_SPECS="${REPOSITORY_SPECS:-https://github.com/Sabayon/community-repositories.git}"
 export ARCHES="amd64"
-export KEEP_PREVIOUS_VERSIONS=1 #you can override this in build.sh
+export KEEP_PREVIOUS_VERSIONS=${KEEP_PREVIOUS_VERSIONS:-1} #you can override this in build.sh
 export EMERGE_SPLIT_INSTALL=0 #by default don't split emerge installation
 #Irc configs, optional.
 export IRC_IDENT="${IRC_IDENT:-bot sabayon scr builder}"
@@ -527,30 +527,36 @@ done
 }
 
 purge_old_packages() {
-export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-removeclean-${JOB_ID}"
-local PKGLISTS=($(find ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME/ | grep PKGLIST))
-local REMOVED=0
-for i in "${PKGLISTS[@]}"
-do
-  local REPO_CONTENT=$(cat ${i} | perl -lpe 's:\~.*::g' | xargs echo );
-  local TOREMOVE=$(OUTPUT_REMOVED=1 PACKAGES=$REPO_CONTENT sark-version-sanitizer );
-  [ -n "${TOREMOVE}" ] && let REMOVED+=1 && package_remove ${TOREMOVE}
-done
+  export DOCKER_OPTS="-t --name ${REPOSITORY_NAME}-removeclean-${JOB_ID}"
+  local PKGLISTS=($(find ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME/ | grep PKGLIST))
+  local REMOVED=0
+  for i in "${PKGLISTS[@]}"
+  do
+    local REPO_CONTENT=$(cat ${i} | perl -lpe 's:\~.*::g' | xargs echo );
+    local TOREMOVE=$(OUTPUT_REMOVED=1 PACKAGES=$REPO_CONTENT sark-version-sanitizer );
+    [ -n "${TOREMOVE}" ] && let REMOVED+=1 && package_remove ${TOREMOVE}
+  done
 
-[ $REMOVED != 0 ] && generate_repository_metadata
-[ "$DOCKER_COMMIT_IMAGE" = true ] && docker commit "${REPOSITORY_NAME}-removeclean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || docker rm -f "${REPOSITORY_NAME}-removeclean-${JOB_ID}"
+  [ $REMOVED != 0 ] && generate_repository_metadata
+  [ "$DOCKER_COMMIT_IMAGE" = true ] && \
+    docker commit "${REPOSITORY_NAME}-removeclean-${JOB_ID}" $DOCKER_EIT_TAGGED_IMAGE || \
+    docker rm -f "${REPOSITORY_NAME}-removeclean-${JOB_ID}"
 
-local OVERLAY_ARTIFACT_PACKAGES=$(find ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME-binhost/ | grep '.tbz2' | perl -lpe 's:.*-binhost/|\.tb.*::g' | xargs echo)
-#local OVERLAY_PACKAGES=$(cat ${VAGRANT_DIR}/artifacts/$REPOSITORY_NAME-binhost/Packages | grep 'CPV:' | awk '{ print $2 }' | xargs echo)
-local TO_REMOVE_BINHOST=($(OUTPUT_REMOVED=1 PACKAGES="$OVERLAY_ARTIFACT_PACKAGES" sark-version-sanitizer))
-
-for i in "${TO_REMOVE_BINHOST[@]}"
-do
-  rm -rfv "${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost/${i}.tbz2"
-done
-
+  purge_binhost_packages "${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}-binhost/"
 }
 
+purge_binhost_packages () {
+  local repodir=$1
+
+  local binhost_pkgs=$(find ${repodir} | grep '.tbz2' | perl -lpe 's:.*-binhost/|\.tb.*::g' | xargs echo)
+  local pkgs2remove=($(OUTPUT_REMOVED=1 PACKAGES="${binhost_pkgs}" sark-version-sanitizer))
+
+  for i in "${pkgs2remove[@]}"
+  do
+    rm -rfv "${repodir}/${i}.tbz2"
+  done
+
+}
 
 docker_clean() {
 # Best effort - cleaning orphaned containers
