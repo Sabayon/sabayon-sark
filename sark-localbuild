@@ -16,6 +16,8 @@ export SKIP_PUSH="${SKIP_PUSH:-0}"
 export REPO_RESET="${REPO_RESET:-0}"
 export REPO_CLEAN_EXPIRE="${REPO_CLEAN_EXPIRE:-0}"
 export REPO_CLEAN_EXPIRE_DAYS="${REPO_CLEAN_EXPIRE_DAYS:-1}"
+# Clean obsolete packages .tgz under binhost directory
+export REPO_BINHOST_CLEAN="${REPO_BINHOST_CLEAN:-0}"
 
 export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
 export SAB_BUILDER=${SAB_BUILDER:-/usr/sbin/builder}
@@ -146,7 +148,7 @@ built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
 [[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
 if [ -d "${ENTROPY_DIR}/standard" ]; then
 
-  if [ $SKIP_PULL -eq 0 ] ; then
+  if [[ $SKIP_PULL = 0 ]] ; then
     echo "=== Repository already exists, syncronizing ==="
     eit unlock $REPOSITORY_NAME || true
     eit pull --quick $REPOSITORY_NAME || true
@@ -161,7 +163,7 @@ fi
 echo "=== Update config files ==="
 echo -9 | equo conf update
 
-if [ ${REPO_RESET} -eq 1 ] ; then
+if [[ ${REPO_RESET} = 1 ]] ; then
   # This is needed 
   echo "=== Reset Repository Revision ==="
   eit reset --quick --local ${REPOSITORY_NAME}
@@ -175,7 +177,7 @@ echo "INJECT = ${built_pkgs}"
 eit inject --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
 
 echo "=== Inject COMPLETED ====="
-if [ ${SKIP_COMMIT} -eq 0 ] ; then
+if [[ ${SKIP_COMMIT} = 0 ]] ; then
   echo "=== Commit packages ====="
   eit commit --quick
   echo "=== Commit COMPLETED ====="
@@ -184,9 +186,13 @@ echo "=== Pushing built packages locally ==="
 eit push --quick --force ${REPOSITORY_NAME}
 [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key" ] && rm -rf /etc/entropy/gpg-keys
 
-if [ ${REPO_CLEAN_EXPIRE} -eq 1 ] ; then
+if [[ ${REPO_CLEAN_EXPIRE} = 1 ]] ; then
   echo "=== Clean expire packages ==="
   eit vacuum --quick --days ${REPO_CLEAN_EXPIRE_DAYS} ${REPOSITORY_NAME}
+fi
+
+if [[ ${REPO_BINHOST_CLEAN} = 1 ]] ; then
+  purge_binhost_packages ${OUTPUT_DIR}
 fi
 
 VAGRANT_DIR=$SAB_WORKSPACE generate_repository_metadata
