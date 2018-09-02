@@ -411,6 +411,9 @@ load_env_from_yaml() {
 local YAML_FILE=$1
 local tmp
 
+# Check if shyaml is available
+[[ ! `which shyaml 2>/dev/null` ]] && { echo "ERROR!!: Missing shyaml tool"; exit 1; }
+
 # repository.*
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.description REPOSITORY_DESCRIPTION  # REPOSITORY_DESCRIPTION
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.keep_previous_versions KEEP_PREVIOUS_VERSIONS # KEEP_PREVIOUS_VERSIONS
