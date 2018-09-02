@@ -5,6 +5,7 @@ export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
 export LC_ALL=en_US.UTF-8
 # Speed up test runs by disabling slow syncs and mirror sorts
 export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
+export SKIP_CLEAN_PACKAGESDIR="${SKIP_CLEAN_PACKAGESDIR:-0}"
 export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
 export CREATEREPO_PHASE=${CREATEREPO_PHASE:-true}
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
@@ -42,7 +43,7 @@ export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 NEW_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 OLD_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 
-rm -rfv /usr/portage/packages/* || true
+[ "${SKIP_CLEAN_PACKAGESDIR}" = 0 ] && rm -rfv /usr/portage/packages/* || true
 
 [ -d ${OUTPUT_DIR} ] || mkdir -p "${OUTPUT_DIR}"
 [ "$CHECK_BUILD_DIFFS" -eq 1 ] && packages_hash ${SAB_WORKSPACE} $REPOSITORY_NAME $OLD_BINHOST_MD5
