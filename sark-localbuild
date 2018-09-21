@@ -49,7 +49,7 @@ OLD_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 [ "$CHECK_BUILD_DIFFS" -eq 1 ] && packages_hash ${SAB_WORKSPACE} $REPOSITORY_NAME $OLD_BINHOST_MD5
 
 [ -z "$PORTAGE_CACHE" ] || [ -d "$PORTAGE_CACHE" ] && cp -rfv $PORTAGE_CACHE /usr/portage
-[ -z "$DISTFILES" ] || [ -d "$PORTAGE_CACHE" ] && cp -rfv $DISTFILES /usr/portage/distfiles
+[ -z "$DISTFILES" ] || [ -d "$DISTFILES" ] && cp -rfv $DISTFILES /usr/portage/
 [ -z "$ENTROPY_DOWNLOADED_PACKAGES" ] || [ -d "$ENTROPY_DOWNLOADED_PACKAGES" ] && cp -rfv $ENTROPY_DOWNLOADED_PACKAGES /var/lib/entropy/client/packages
 [ -d "$LOCAL_OVERLAY" ] && cp -rfv $LOCAL_OVERLAY /usr/local/local_portage
 
