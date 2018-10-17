@@ -18,7 +18,7 @@ export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 
 export ENTRYPOINT="--entrypoint ${ENTRYPOINT:-/usr/sbin/builder}"
 export DOCKER_OPTS="${DOCKER_OPTS:---cap-add=SYS_PTRACE -t $ENTRYPOINT}" # Remember to set --rm if DOCKER_COMMIT_IMAGE: false
-export DISTFILES="${VAGRANT_DIR}/distfiles"
+export DISTFILES="${DISTFILES:-${VAGRANT_DIR}/distfiles}"
 export ENTROPY_DOWNLOADED_PACKAGES="${VAGRANT_DIR}/entropycache"
 export DOCKER_EIT_IMAGE="${DOCKER_EIT_IMAGE:-sabayon/eit-amd64}"
 export PORTAGE_CACHE="${PORTAGE_CACHE:-${VAGRANT_DIR}/portagecache}"
@@ -409,7 +409,12 @@ set_var_from_yaml_if_nonempty() {
 
 load_env_from_yaml() {
 local YAML_FILE=$1
-local tmp
+local tmp_overlay
+local tmp_pkginstall
+local tmp_pkgremove
+
+# Check if shyaml is available
+[[ ! `which shyaml 2>/dev/null` ]] && { echo "ERROR!!: Missing shyaml tool"; exit 1; }
 
 # repository.*
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.description REPOSITORY_DESCRIPTION  # REPOSITORY_DESCRIPTION
@@ -423,7 +428,7 @@ set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.c
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.share_workspace SHARE_WORKSPACE
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.injected_target BUILD_INJECTED_ARGS  #mixed toinstall BUILD_ARGS
-set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.overlays tmp; [[ -n ${tmp} ]] && BUILD_ARGS="${BUILD_ARGS} --layman ${tmp}" #--layman options
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.overlays tmp_overlay; [[ -n ${tmp_overlay} ]] && BUILD_ARGS="${BUILD_ARGS} --layman ${tmp_overlay}" #--layman options
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.verbose BUILDER_VERBOSE
 
 # build.docker.*
@@ -458,8 +463,8 @@ set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_in
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.prune_virtuals PRUNE_VIRTUALS # PRUNE_VIRTUALS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.install_version EQUO_INSTALL_VERSION # EQUO_INSTALL_VERSION
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.split_install EQUO_SPLIT_INSTALL # EQUO_SPLIT_INSTALL
-set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.equo.package.install tmp; [[ -n ${tmp} ]] && BUILD_ARGS="${BUILD_ARGS} --install ${tmp}"  #mixed --install BUILD_ARGS
-set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.equo.package.remove tmp; [[ -n ${tmp} ]] && BUILD_ARGS="${BUILD_ARGS} --remove ${tmp}"   #mixed --remove BUILD_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.equo.package.install tmp_pkginstall; [[ -n ${tmp_pkginstall} ]] && BUILD_ARGS="${BUILD_ARGS} --install ${tmp_pkginstall}"  #mixed --install BUILD_ARGS
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.equo.package.remove tmp_pkgremove; [[ -n ${tmp_pkgremove} ]] && BUILD_ARGS="${BUILD_ARGS} --remove ${tmp_pkgremove}"   #mixed --remove BUILD_ARGS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.equo.package.mask EQUO_MASKS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values build.equo.package.unmask EQUO_UNMASKS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.no_cache ETP_NOCACHE # ETP_NOCACHE
