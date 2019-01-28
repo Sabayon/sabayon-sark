@@ -24,6 +24,7 @@ export REPO_BINHOST_CLEAN="${REPO_BINHOST_CLEAN:-0}"
 
 export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
 export SAB_BUILDER=${SAB_BUILDER:-/usr/sbin/builder}
+export SAB_PORTDIR=${SAB_PORTDIR:-/opt/sabayon-build/conf/${SAB_ARCH}/portage}
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
   echo "You specified a make.conf. I hope you know what are you doing"
@@ -69,12 +70,33 @@ POST_SCRIPT_FILE=$(mktemp -t "$(basename $0).XXXXXXXXXX")
 
 if [ -d "$SAB_WORKSPACE"/specs ]; then
   echo "Specs found"
-  [ -e "$SAB_WORKSPACE"/specs/custom.mask ] && cp -rfv "$SAB_WORKSPACE/specs/custom.mask" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.mask/99-custom.mask"
-  [ -e "$SAB_WORKSPACE"/specs/custom.unmask ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.unmask" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.unmask/99-custom.unmask"
-  [ -e "$SAB_WORKSPACE"/specs/custom.use ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.use" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.use/99-custom.use"
-  [ -e "$SAB_WORKSPACE"/specs/custom.env ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.env" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.env"
-  [ -e "$SAB_WORKSPACE"/specs/custom.keywords ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.keywords" "/opt/sabayon-build/conf/$SAB_ARCH/portage/package.keywords/99-custom.keywords"
-  [ -d "$SAB_WORKSPACE"/specs/env ] &&  cp -rfv "$SAB_WORKSPACE/specs/env/" "/opt/sabayon-build/conf/$SAB_ARCH/portage/env/"
+
+  if [ -e "$SAB_WORKSPACE"/specs/custom.mask ] ; then
+    mkdir -p "${SAB_PORTDIR}/package.mask" || true
+    cp -rfv "$SAB_WORKSPACE/specs/custom.mask" "${SAB_PORTDIR}/package.mask/99-custom.mask"
+  fi
+
+  if [ -e "$SAB_WORKSPACE"/specs/custom.unmask ] ; then
+    mkdir -p "${SAB_PORTDIR}/package.unmask" || true
+    cp -rfv "$SAB_WORKSPACE/specs/custom.unmask" "${SAB_PORTDIR}/package.unmask/99-custom.unmask"
+  fi
+
+  if [ -e "$SAB_WORKSPACE"/specs/custom.use ] ; then
+    mkdir -p "${SAB_PORTDIR}/package.use" || true
+    cp -rfv "$SAB_WORKSPACE/specs/custom.use" "${SAB_PORTDIR}/package.use/99-custom.use"
+  fi
+
+  if [ -e "$SAB_WORKSPACE"/specs/custom.keywords ] ; then
+    mkdir -p "${SAB_PORTDIR}/package.keywords" || true
+    cp -rfv "$SAB_WORKSPACE/specs/custom.keywords" "${SAB_PORTDIR}/package.keywords/99-custom.keywords"
+  fi
+
+  if [ -d "$SAB_WORKSPACE"/specs/env ] ; then
+    mkdir -p "${SAB_PORTDIR}/package.keywords" || true
+    cp -rfv "$SAB_WORKSPACE/specs/env/" "${SAB_PORTDIR}/env/"
+  fi
+
+  [ -e "$SAB_WORKSPACE"/specs/custom.env ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.env" "${SAB_PORTDIR}/package.env"
 fi
 
 # Debug what env vars are being passed to the builder
