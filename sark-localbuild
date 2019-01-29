@@ -153,6 +153,9 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
       cp -rf "${TBZ2_DIR}"/${TO_INJECT[$i]} ${TEMPDIR}/
     done
   fi
+else
+  # Inject all packages available under /usr/portage/packages
+  cp -R /usr/portage/packages/* ${TEMPDIR} || true
 fi
 
 export PACKAGES_DIR=$TEMPDIR
