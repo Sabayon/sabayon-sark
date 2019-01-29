@@ -7,7 +7,12 @@ export LC_ALL=en_US.UTF-8
 export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
 export SKIP_CLEAN_PACKAGESDIR="${SKIP_CLEAN_PACKAGESDIR:-0}"
 export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
+# Enable/Disable create repository phase
 export CREATEREPO_PHASE=${CREATEREPO_PHASE:-true}
+# Enable/Disable builder phase. In general this is always true.
+# It is set to false for testing injection of packages or move binhost files
+# under a new repository.
+export BUILDER_PHASE=${BUILDER_PHASE:-true}
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 export MAKE_CONF="${MAKE_CONF:-}"
@@ -108,9 +113,13 @@ if [ "${SKIP_PRINTENV}" != 1 ] ; then
 fi
 
 
-pushd /
-  /usr/bin/tini -s -- ${SAB_BUILDER} $BUILD_ARGS
-popd
+if [ "$BUILDER_PHASE" = true ] ; then
+  pushd /
+    /usr/bin/tini -s -- ${SAB_BUILDER} $BUILD_ARGS
+  popd
+fi
+
+[ "$CREATEREPO_PHASE" = false ] && exit $?
 
 BUILD_STATUS=$?
 
