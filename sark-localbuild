@@ -17,21 +17,13 @@ export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 export MAKE_CONF="${MAKE_CONF:-}"
 export LOCAL_OVERLAY="${LOCAL_OVERLAY:-$SAB_WORKSPACE/local_overlay}"
-export SKIP_COMMIT="${SKIP_COMMIT:-0}"
-export SKIP_PUSH="${SKIP_PUSH:-0}"
-export REPO_RESET="${REPO_RESET:-0}"
 # Add skip env print if there are env vars with credentials.
 export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
-export REPO_CLEAN_EXPIRE="${REPO_CLEAN_EXPIRE:-0}"
-export REPO_CLEAN_EXPIRE_DAYS="${REPO_CLEAN_EXPIRE_DAYS:-1}"
-# Clean obsolete packages .tgz under binhost directory
-export REPO_BINHOST_CLEAN="${REPO_BINHOST_CLEAN:-0}"
 
 export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
 export SAB_BUILDER=${SAB_BUILDER:-/usr/sbin/builder}
 export SAB_PORTDIR=${SAB_PORTDIR:-/opt/sabayon-build/conf/${SAB_ARCH}/portage}
 
-export ENTROPY_DIR="/${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}"
 export EDITOR=cat
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then

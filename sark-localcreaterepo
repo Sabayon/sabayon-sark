@@ -3,8 +3,12 @@
 export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
 export LC_ALL=en_US.UTF-8
 export SKIP_PULL="${SKIP_PULL:-0}"
+export SKIP_PUSH="${SKIP_PUSH:-0}"
+export SKIP_COMMIT="${SKIP_COMMIT:-0}"
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 
+# Add additional option for eit inject command.
+export EIT_INJECT_OPTS="${EIT_INJECT_OPTS:-}"
 export REPO_RESET="${REPO_RESET:-0}"
 
 # Add skip env print if there are env vars with credentials.
@@ -90,7 +94,7 @@ fi
 eit key import ${REPOSITORY_NAME} ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub && { eit key sign ${REPOSITORY_NAME} || true; } && { echo "=== Repository key imported successfully ==="; }
 echo "=== Injecting packages ==="
 echo "INJECT = ${built_pkgs}"
-eit inject --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
+eit inject ${EIT_INJECT_OPTS} --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
 echo "=== Inject COMPLETED ====="
 
 echo "=== Removing packages ==="
