@@ -91,10 +91,7 @@ if [ -d "$SAB_WORKSPACE"/specs ]; then
     cp -rfv "$SAB_WORKSPACE/specs/custom.keywords" "${SAB_PORTDIR}/package.keywords/99-custom.keywords"
   fi
 
-  if [ -d "$SAB_WORKSPACE"/specs/env ] ; then
-    mkdir -p "${SAB_PORTDIR}/package.keywords" || true
-    cp -rfv "$SAB_WORKSPACE/specs/env/" "${SAB_PORTDIR}/env/"
-  fi
+  [ -d "$SAB_WORKSPACE"/specs/env ] && cp -rfv "$SAB_WORKSPACE/specs/env/" "${SAB_PORTDIR}/env/"
 
   [ -e "$SAB_WORKSPACE"/specs/custom.env ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.env" "${SAB_PORTDIR}/package.env"
 fi
