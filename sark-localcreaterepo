@@ -100,7 +100,7 @@ echo "=== Inject COMPLETED ====="
 echo "=== Removing packages ==="
 
 if [ -n "${TOREMOVE}" ]; then
-  echo "Yes" | eit rm --from $REPOSITORY_NAME $TOREMOVE || { echo "ouch unable to remove" && exit 3; }
+  eit rm --quick --from $REPOSITORY_NAME $TOREMOVE || { echo "ouch unable to remove" && exit 3; }
 fi
 
 echo "=== Removing packages completed ==="
