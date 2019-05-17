@@ -25,6 +25,9 @@ export PACKAGES_DIR="${PACKAGES_DIR:-/${SAB_WORKSPACE}/artifacts/${REPOSITORY_NA
 
 export ENTROPY_RSS_BASEURL="${ENTROPY_RSS_BASEURL:-http://packages.sabayon.org/?quicksearch=}"
 export ENTROPY_RSS_WEBURL="${ENTROPY_RSS_WEBURL:-http://www.sabayon.org/}"
+# When PKGS_CACHE_DIR is defined then use directly packages
+# directory without the use of a temporary directory.
+export PKGS_CACHE_DIR="${PKGS_CACHE_DIR:-}"
 
 set -e
 
@@ -63,9 +66,13 @@ EOF
 
 
 mkdir -p ${ENTROPY_DIR} || true
-TEMPDIR=$(mktemp -d)
 
-cp -rf $(find $PACKAGES_DIR -name "*.tbz2" | xargs) $TEMPDIR
+if [ -z "${PKGS_CACHE_DIR}" ] ; then
+  TEMPDIR=$(mktemp -d)
+  cp -rf $(find $PACKAGES_DIR -name "*.tbz2" | xargs) $TEMPDIR
+else
+  TEMPDIR="${PKGS_CACHE_DIR}"
+fi
 
 built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
 [[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2

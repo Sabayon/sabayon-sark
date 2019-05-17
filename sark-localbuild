@@ -147,5 +147,5 @@ else
   cp -R /usr/portage/packages/* ${TEMPDIR} || true
 fi
 
-export PACKAGES_DIR=$TEMPDIR
+export PKGS_CACHE_DIR=$TEMPDIR
 sark-localcreaterepo
