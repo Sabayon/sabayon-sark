@@ -8,7 +8,7 @@ export SKIP_COMMIT="${SKIP_COMMIT:-0}"
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 
 # Add additional option for eit inject command.
-export EIT_INJECT_OPTS="${EIT_INJECT_OPTS:-}"
+export EIT_INJECT_OPTS="${EIT_INJECT_OPTS:---quick}"
 export REPO_RESET="${REPO_RESET:-0}"
 
 # Add skip env print if there are env vars with credentials.
