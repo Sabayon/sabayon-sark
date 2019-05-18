@@ -7,26 +7,23 @@ export LC_ALL=en_US.UTF-8
 export SKIP_PORTAGE_SYNC="${SKIP_PORTAGE_SYNC:-0}"
 export SKIP_CLEAN_PACKAGESDIR="${SKIP_CLEAN_PACKAGESDIR:-0}"
 export EQUO_MIRRORSORT="${EQUO_MIRRORSORT:-0}"
+# Enable/Disable create repository phase
 export CREATEREPO_PHASE=${CREATEREPO_PHASE:-true}
+# Enable/Disable builder phase. In general this is always true.
+# It is set to false for testing injection of packages or move binhost files
+# under a new repository.
+export BUILDER_PHASE=${BUILDER_PHASE:-true}
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 export MAKE_CONF="${MAKE_CONF:-}"
 export LOCAL_OVERLAY="${LOCAL_OVERLAY:-$SAB_WORKSPACE/local_overlay}"
-export SKIP_COMMIT="${SKIP_COMMIT:-0}"
-export SKIP_PUSH="${SKIP_PUSH:-0}"
-export REPO_RESET="${REPO_RESET:-0}"
 # Add skip env print if there are env vars with credentials.
 export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
-export REPO_CLEAN_EXPIRE="${REPO_CLEAN_EXPIRE:-0}"
-export REPO_CLEAN_EXPIRE_DAYS="${REPO_CLEAN_EXPIRE_DAYS:-1}"
-# Clean obsolete packages .tgz under binhost directory
-export REPO_BINHOST_CLEAN="${REPO_BINHOST_CLEAN:-0}"
 
 export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
 export SAB_BUILDER=${SAB_BUILDER:-/usr/sbin/builder}
 export SAB_PORTDIR=${SAB_PORTDIR:-/opt/sabayon-build/conf/${SAB_ARCH}/portage}
 
-export ENTROPY_DIR="/${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}"
 export EDITOR=cat
 
 if [ -e "$SAB_WORKSPACE/specs/make.conf" ]; then
@@ -94,10 +91,7 @@ if [ -d "$SAB_WORKSPACE"/specs ]; then
     cp -rfv "$SAB_WORKSPACE/specs/custom.keywords" "${SAB_PORTDIR}/package.keywords/99-custom.keywords"
   fi
 
-  if [ -d "$SAB_WORKSPACE"/specs/env ] ; then
-    mkdir -p "${SAB_PORTDIR}/package.keywords" || true
-    cp -rfv "$SAB_WORKSPACE/specs/env/" "${SAB_PORTDIR}/env/"
-  fi
+  [ -d "$SAB_WORKSPACE"/specs/env ] && cp -rfv "$SAB_WORKSPACE/specs/env/" "${SAB_PORTDIR}/env/"
 
   [ -e "$SAB_WORKSPACE"/specs/custom.env ] &&  cp -rfv "$SAB_WORKSPACE/specs/custom.env" "${SAB_PORTDIR}/package.env"
 fi
@@ -108,9 +102,13 @@ if [ "${SKIP_PRINTENV}" != 1 ] ; then
 fi
 
 
-pushd /
-  /usr/bin/tini -s -- ${SAB_BUILDER} $BUILD_ARGS
-popd
+if [ "$BUILDER_PHASE" = true ] ; then
+  pushd /
+    /usr/bin/tini -s -- ${SAB_BUILDER} $BUILD_ARGS
+  popd
+fi
+
+[ "$CREATEREPO_PHASE" = false ] && exit $?
 
 BUILD_STATUS=$?
 
@@ -144,7 +142,10 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
       cp -rf "${TBZ2_DIR}"/${TO_INJECT[$i]} ${TEMPDIR}/
     done
   fi
+else
+  # Inject all packages available under /usr/portage/packages
+  cp -R /usr/portage/packages/* ${TEMPDIR} || true
 fi
 
-export PACKAGES_DIR=$TEMPDIR
+export PKGS_CACHE_DIR=$TEMPDIR
 sark-localcreaterepo
