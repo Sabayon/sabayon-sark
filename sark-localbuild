@@ -108,16 +108,15 @@ if [ "$BUILDER_PHASE" = true ] ; then
   popd
 fi
 
-[ "$CREATEREPO_PHASE" = false ] && exit $?
-
 BUILD_STATUS=$?
 
 rm -rf $PRE_SCRIPT_FILE || true
 rm -rf $POST_SCRIPT_FILE || true
 cp -R /usr/portage/packages/* ${OUTPUT_DIR} || true
-TEMPDIR=$(mktemp -d)
 
 [ "$CREATEREPO_PHASE" = false ] && exit $BUILD_STATUS
+
+TEMPDIR=$(mktemp -d)
 
 # Checking diffs
 if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
