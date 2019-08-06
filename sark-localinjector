@@ -1,0 +1,113 @@
+#!/bin/bash
+# Authors: Sabayon Team
+
+set -e
+
+export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
+export LC_ALL=en_US.UTF-8
+
+export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
+export SAB_ARCH="${SAB_ARCH:-intel}"
+
+# Add skip env print if there are env vars with credentials.
+export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
+export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
+
+export SAB_STAGING_DIRS="${SAB_STAGING_DIRS:-staging1 staging2}"
+
+. /sbin/sark-functions.sh
+
+if [ ! -e ${SAB_BUILDFILE} ]; then
+    echo "Must be run from a repository directory containing a ${SAB_BUILDFILE}"
+    exit 1
+fi
+
+if [ -z "${SAB_STAGING_DIRS}" ] ; then
+    echo "No staging dirs defined"
+    exit 1
+fi
+
+load_env_from_yaml ${SAB_BUILDFILE}
+
+export OUTPUT_DIR="${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost"
+export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
+
+NEW_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+OLD_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
+
+[ -d ${OUTPUT_DIR} ] || mkdir -p "${OUTPUT_DIR}"
+[ "$CHECK_BUILD_DIFFS" -eq 1 ] && packages_hash ${SAB_WORKSPACE} $REPOSITORY_NAME $OLD_BINHOST_MD5
+
+# Debug what env vars are being passed to the builder
+if [ "${SKIP_PRINTENV}" != 1 ] ; then
+  printenv | sort
+fi
+
+[ -d /usr/portage/packages ] || mkdir -p /usr/portage/packages
+
+# Copy binhosts from staging directories
+for dir in ${SAB_STAGING_DIRS} ; do
+
+    [ ! -d ${SAB_WORKSPACE}/${dir} ] && {
+        echo "Skipping staging directory ${dir}."
+        continue
+    }
+
+    pushd ${SAB_WORKSPACE}/${dir}
+
+    # Copy files from any binhost directory
+    binhost_dirs=$(ls --color=none -d ./*-binhost)
+
+    for bhd in ${binhost_dirs} ; do
+        if [ -d ${bhd} ] ; then
+            if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
+                cp -rvf ${bhd}/* ${OUTPUT_DIR} || true
+            else
+                cp -rvf ${bhd}/* /usr/portage/packages
+            fi
+        fi
+    done
+
+    popd
+done
+
+TEMPDIR=$(mktemp -d)
+
+# Checking diffs
+if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
+  echo "*** Checking tbz2 diffs ***"
+  # let's do the hash of the tbz2 without xpak data
+  packages_hash ${SAB_WORKSPACE}  $REPOSITORY_NAME $NEW_BINHOST_MD5
+  TO_INJECT=($(diff -ru $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 | grep -v -e '^\+[\+]' | grep -e '^\+' | awk '{print $2}'))
+
+  echo "INJECT RESULT = ${TO_INJECT[@]}"
+
+  #if diffs are detected, regenerate the repository
+  if diff -q $OLD_BINHOST_MD5 $NEW_BINHOST_MD5 >/dev/null ; then
+    echo "No changes where detected, repository generation prevented"
+
+    rm -rf $OLD_BINHOST_MD5 $NEW_BINHOST_MD5
+    exit 0
+  else
+    TBZ2_DIR=${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost
+    echo "${TO_INJECT[@]} packages needs to be injected"
+    for ((i=0; i<${#TO_INJECT[@]}; i++)) ; do
+      echo "Copying ${TO_INJECT[$i]} to ${TEMPDIR}..."
+      cp -rf "${TBZ2_DIR}"/${TO_INJECT[$i]} ${TEMPDIR}/
+    done
+  fi
+else
+  # Inject all packages available under /usr/portage/packages
+  cp -R /usr/portage/packages/* ${TEMPDIR} || true
+fi
+
+export PKGS_CACHE_DIR=$TEMPDIR
+sark-localcreaterepo
+
+# Clean staging directories from namespace/artficats.
+for dir in ${SAB_STAGING_DIRS} ; do
+    if [ -d ${SAB_WORKSPACE}/${dir} ] ; then
+        echo "Cleanup staging directory ${dir}..."
+        rm -rf ${SAB_WORKSPACE}/${dir}
+    fi
+done
