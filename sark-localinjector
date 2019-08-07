@@ -54,7 +54,7 @@ for dir in ${SAB_STAGING_DIRS} ; do
         continue
     }
 
-    pushd ${SAB_WORKSPACE}/${dir}
+    pushd ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir}
 
     # Copy files from any binhost directory
     binhost_dirs=$(ls --color=none -d ./*-binhost)
