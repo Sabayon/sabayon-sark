@@ -7,6 +7,7 @@ export REPOSITORY_NAME="${REPOSITORY_NAME:-$(basename $(pwd))}"
 export LC_ALL=en_US.UTF-8
 
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
+export SAB_ARTIFACTS_DIR="${SAB_ARTIFACTS_DIR:-artifacts}"
 export SAB_ARCH="${SAB_ARCH:-intel}"
 
 # Add skip env print if there are env vars with credentials.
@@ -29,7 +30,7 @@ fi
 
 load_env_from_yaml ${SAB_BUILDFILE}
 
-export OUTPUT_DIR="${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost"
+export OUTPUT_DIR="${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}-binhost"
 export CHECK_BUILD_DIFFS=${CHECK_BUILD_DIFFS:-1}
 
 NEW_BINHOST_MD5=$(mktemp -t "$(basename $0).XXXXXXXXXX")
@@ -48,7 +49,7 @@ fi
 # Copy binhosts from staging directories
 for dir in ${SAB_STAGING_DIRS} ; do
 
-    [ ! -d ${SAB_WORKSPACE}/${dir} ] && {
+    [ ! -d ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir} ] && {
         echo "Skipping staging directory ${dir}."
         continue
     }
@@ -89,7 +90,7 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
     rm -rf $OLD_BINHOST_MD5 $NEW_BINHOST_MD5
     exit 0
   else
-    TBZ2_DIR=${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost
+    TBZ2_DIR=${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}-binhost
     echo "${TO_INJECT[@]} packages needs to be injected"
     for ((i=0; i<${#TO_INJECT[@]}; i++)) ; do
       echo "Copying ${TO_INJECT[$i]} to ${TEMPDIR}..."
