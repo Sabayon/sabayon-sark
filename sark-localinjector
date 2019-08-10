@@ -107,8 +107,8 @@ sark-localcreaterepo
 
 # Clean staging directories from namespace/artficats.
 for dir in ${SAB_STAGING_DIRS} ; do
-    if [ -d ${SAB_WORKSPACE}/${dir} ] ; then
+    if [ -d ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir} ] ; then
         echo "Cleanup staging directory ${dir}..."
-        rm -rf ${SAB_WORKSPACE}/${dir}
+        rm -rf ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir}
     fi
 done
