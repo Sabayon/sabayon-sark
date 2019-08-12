@@ -426,7 +426,11 @@ set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.c
 # recompose our BUILD_ARGS
 # build.*
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.share_workspace SHARE_WORKSPACE
-set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
+if [ -n "$OVERRIDE_BUILD_TARGET" ] ; then
+  BUILD_ARGS="$OVERRIDE_BUILD_TARGET"
+else
+  set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
+fi
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.injected_target BUILD_INJECTED_ARGS  #mixed toinstall BUILD_ARGS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.overlays tmp_overlay; [[ -n ${tmp_overlay} ]] && BUILD_ARGS="${BUILD_ARGS} --layman ${tmp_overlay}" #--layman options
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.verbose BUILDER_VERBOSE
