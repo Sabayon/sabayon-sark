@@ -12,13 +12,13 @@ export SAB_ARCH="${SAB_ARCH:-intel}"
 
 # Add skip env print if there are env vars with credentials.
 export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
-export SAB_BUILDFILE=${SAB_BUILDFILE:-build.yaml}
+export SAB_BUILDFILE="${SAB_BUILDFILE:-build.yaml}"
 
 export SAB_STAGING_DIRS="${SAB_STAGING_DIRS:-staging1 staging2}"
 
 . /sbin/sark-functions.sh
 
-if [ ! -e ${SAB_BUILDFILE} ]; then
+if [ ! -e "${SAB_BUILDFILE}" ]; then
     echo "Must be run from a repository directory containing a ${SAB_BUILDFILE}"
     exit 1
 fi
