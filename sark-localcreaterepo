@@ -102,6 +102,13 @@ fi
 
 [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key" ] && { ! eit key status ${REPOSITORY_NAME}; } && \
 eit key import ${REPOSITORY_NAME} ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub && { eit key sign ${REPOSITORY_NAME} || true; } && { echo "=== Repository key imported successfully ==="; }
+
+if  [ -n "${TOREMOVE_BEFORE}" ] ; then
+  echo "=== Removing packages before inject ==="
+  eit rm --quick --from $REPOSITORY_NAME $TOREMOVE_BEFORE || { echo "ouch unable to remove" && exit 3; }
+  echo "=== Removing packages before inject COMPLETED ==="
+fi
+
 echo "=== Injecting packages ==="
 echo "INJECT = ${built_pkgs}"
 eit inject ${EIT_INJECT_OPTS} --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }

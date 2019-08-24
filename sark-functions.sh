@@ -420,6 +420,7 @@ local tmp_pkgremove
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.description REPOSITORY_DESCRIPTION  # REPOSITORY_DESCRIPTION
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.keep_previous_versions KEEP_PREVIOUS_VERSIONS # KEEP_PREVIOUS_VERSIONS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values repository.maintenance.remove TOREMOVE # replaces package_remove
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values repository.maintenance.remove_before_inject TOREMOVE_BEFORE # TOREMOVE_BEFORE
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.clean_cache CLEAN_CACHE # CLEAN_CACHE
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.check_diffs CHECK_BUILD_DIFFS # CHECK_BUILD_DIFFS
 
