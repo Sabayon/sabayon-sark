@@ -10,6 +10,8 @@ export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 # Add additional option for eit inject command.
 export EIT_INJECT_OPTS="${EIT_INJECT_OPTS:---quick}"
 export REPO_RESET="${REPO_RESET:-0}"
+# Enable additional options for eit remove command. Additional option possible --nodeps
+export EIT_REMOVE_OPTS="${EIT_REMOVE_OPTS:---quick}"
 
 # Add skip env print if there are env vars with credentials.
 export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
@@ -105,7 +107,10 @@ eit key import ${REPOSITORY_NAME} ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key 
 
 if  [ -n "${TOREMOVE_BEFORE}" ] ; then
   echo "=== Removing packages before inject ==="
-  eit rm --quick --from $REPOSITORY_NAME $TOREMOVE_BEFORE || { echo "ouch unable to remove" && exit 3; }
+  # NOTE: Require pull of the repository for retrieve list of packages.
+  eit rm ${EIT_REMOVE_OPTS} --from $REPOSITORY_NAME $TOREMOVE_BEFORE || {
+    echo "ouch unable to remove" && exit 3;
+  }
   echo "=== Removing packages before inject COMPLETED ==="
 fi
 
@@ -117,7 +122,7 @@ echo "=== Inject COMPLETED ====="
 echo "=== Removing packages ==="
 
 if [ -n "${TOREMOVE}" ]; then
-  eit rm --quick --from $REPOSITORY_NAME $TOREMOVE || { echo "ouch unable to remove" && exit 3; }
+  eit rm ${EIT_REMOVE_OPTS} --from $REPOSITORY_NAME $TOREMOVE || { echo "ouch unable to remove" && exit 3; }
 fi
 
 echo "=== Removing packages completed ==="
