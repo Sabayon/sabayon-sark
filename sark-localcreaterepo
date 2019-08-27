@@ -70,15 +70,18 @@ EOF
 
 mkdir -p ${ENTROPY_DIR} || true
 
-if [ -z "${PKGS_CACHE_DIR}" ] ; then
-  TEMPDIR=$(mktemp -d)
-  cp -rf $(find $PACKAGES_DIR -name "*.tbz2" | xargs) $TEMPDIR
-else
-  TEMPDIR="${PKGS_CACHE_DIR}"
+if [[ ${SKIP_INJECT} = 0 ]] ; then
+  if [ -z "${PKGS_CACHE_DIR}" ] ; then
+    TEMPDIR=$(mktemp -d)
+    cp -rf $(find $PACKAGES_DIR -name "*.tbz2" | xargs) $TEMPDIR
+  else
+    TEMPDIR="${PKGS_CACHE_DIR}"
+  fi
+
+  built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
+  [[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
 fi
 
-built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
-[[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
 if [ -d "${ENTROPY_DIR}/standard" ]; then
 
   if [[ $SKIP_PULL = 0 ]] ; then
