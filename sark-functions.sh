@@ -420,13 +420,19 @@ local tmp_pkgremove
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.description REPOSITORY_DESCRIPTION  # REPOSITORY_DESCRIPTION
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.keep_previous_versions KEEP_PREVIOUS_VERSIONS # KEEP_PREVIOUS_VERSIONS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values repository.maintenance.remove TOREMOVE # replaces package_remove
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-values repository.maintenance.remove_before_inject TOREMOVE_BEFORE # TOREMOVE_BEFORE
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.remove_opts EIT_REMOVE_OPTS # EIT_REMOVE_OPTS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.clean_cache CLEAN_CACHE # CLEAN_CACHE
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.check_diffs CHECK_BUILD_DIFFS # CHECK_BUILD_DIFFS
 
 # recompose our BUILD_ARGS
 # build.*
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.share_workspace SHARE_WORKSPACE
-set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
+if [ -n "$OVERRIDE_BUILD_TARGET" ] ; then
+  BUILD_ARGS="$OVERRIDE_BUILD_TARGET"
+else
+  set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
+fi
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.injected_target BUILD_INJECTED_ARGS  #mixed toinstall BUILD_ARGS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.overlays tmp_overlay; [[ -n ${tmp_overlay} ]] && BUILD_ARGS="${BUILD_ARGS} --layman ${tmp_overlay}" #--layman options
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.verbose BUILDER_VERBOSE

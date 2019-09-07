@@ -5,11 +5,14 @@ export LC_ALL=en_US.UTF-8
 export SKIP_PULL="${SKIP_PULL:-0}"
 export SKIP_PUSH="${SKIP_PUSH:-0}"
 export SKIP_COMMIT="${SKIP_COMMIT:-0}"
+export SKIP_INJECT="${SKIP_INJECT:-0}"
 export SAB_WORKSPACE="${SAB_WORKSPACE:-$PWD}"
 
 # Add additional option for eit inject command.
 export EIT_INJECT_OPTS="${EIT_INJECT_OPTS:---quick}"
 export REPO_RESET="${REPO_RESET:-0}"
+# Enable additional options for eit remove command. Additional option possible --nodeps
+export EIT_REMOVE_OPTS="${EIT_REMOVE_OPTS:---quick}"
 
 # Add skip env print if there are env vars with credentials.
 export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
@@ -67,15 +70,18 @@ EOF
 
 mkdir -p ${ENTROPY_DIR} || true
 
-if [ -z "${PKGS_CACHE_DIR}" ] ; then
-  TEMPDIR=$(mktemp -d)
-  cp -rf $(find $PACKAGES_DIR -name "*.tbz2" | xargs) $TEMPDIR
-else
-  TEMPDIR="${PKGS_CACHE_DIR}"
+if [[ ${SKIP_INJECT} = 0 ]] ; then
+  if [ -z "${PKGS_CACHE_DIR}" ] ; then
+    TEMPDIR=$(mktemp -d)
+    cp -rf $(find $PACKAGES_DIR -name "*.tbz2" | xargs) $TEMPDIR
+  else
+    TEMPDIR="${PKGS_CACHE_DIR}"
+  fi
+
+  built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
+  [[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
 fi
 
-built_pkgs=$(find $TEMPDIR -name "*.tbz2" | xargs)
-[[ -z "${built_pkgs}" ]] && echo "ERROR: no tbz2s found" && exit 2
 if [ -d "${ENTROPY_DIR}/standard" ]; then
 
   if [[ $SKIP_PULL = 0 ]] ; then
@@ -102,15 +108,27 @@ fi
 
 [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub" ] && [ -f "${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key" ] && { ! eit key status ${REPOSITORY_NAME}; } && \
 eit key import ${REPOSITORY_NAME} ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.key ${SAB_WORKSPACE}/confs/${REPOSITORY_NAME}.pub && { eit key sign ${REPOSITORY_NAME} || true; } && { echo "=== Repository key imported successfully ==="; }
-echo "=== Injecting packages ==="
-echo "INJECT = ${built_pkgs}"
-eit inject ${EIT_INJECT_OPTS} --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
-echo "=== Inject COMPLETED ====="
+
+if  [ -n "${TOREMOVE_BEFORE}" ] ; then
+  echo "=== Removing packages before inject ==="
+  # NOTE: Require pull of the repository for retrieve list of packages.
+  eit rm ${EIT_REMOVE_OPTS} --from $REPOSITORY_NAME $TOREMOVE_BEFORE || {
+    echo "ouch unable to remove" && exit 3;
+  }
+  echo "=== Removing packages before inject COMPLETED ==="
+fi
+
+if [[ ${SKIP_INJECT} = 0 ]] ; then
+  echo "=== Injecting packages ==="
+  echo "INJECT = ${built_pkgs}"
+  eit inject ${EIT_INJECT_OPTS} --to ${REPOSITORY_NAME} --quick ${built_pkgs} || { echo "ouch unable to inject" && exit 3; }
+  echo "=== Inject COMPLETED ====="
+fi
 
 echo "=== Removing packages ==="
 
 if [ -n "${TOREMOVE}" ]; then
-  eit rm --quick --from $REPOSITORY_NAME $TOREMOVE || { echo "ouch unable to remove" && exit 3; }
+  eit rm ${EIT_REMOVE_OPTS} --from $REPOSITORY_NAME $TOREMOVE || { echo "ouch unable to remove" && exit 3; }
 fi
 
 echo "=== Removing packages completed ==="
