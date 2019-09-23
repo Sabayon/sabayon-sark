@@ -140,7 +140,7 @@ packages_hash() {
   # Exclude .bz2 for man files with timestamp string
   checker_opts="${checker_opts} -e .bz2"
 
-  ${PKGS_CHECKER_BIN} ${checker_opts} ${PKGS_CHECKER_OPTS} -d ${dir} -f ${HASH_OUTPUT}
+  ${PKGS_CHECKER_BIN} hash ${checker_opts} ${PKGS_CHECKER_OPTS} -d ${dir} -f ${HASH_OUTPUT}
 
   cat ${HASH_OUTPUT}
 }
