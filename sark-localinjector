@@ -106,7 +106,7 @@ else
 fi
 
 # Filter inject of the files
-${PKGS_CHECKER_BIN} ${PKG_CHECKER_FILTER_OPTS} -d ${TEMPDIR}|| {
+${PKGS_CHECKER_BIN} filter ${PKG_CHECKER_FILTER_OPTS} -d ${TEMPDIR}|| {
   echo "Error on filter packages"
   exit 1
 }
