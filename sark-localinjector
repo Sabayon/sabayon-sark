@@ -17,7 +17,8 @@ export SAB_BUILDFILE="${SAB_BUILDFILE:-build.yaml}"
 export SAB_STAGING_DIRS="${SAB_STAGING_DIRS:-staging1 staging2}"
 
 # Pkgs-checker filter option
-export PKG_CHECKER_FILTER_OPTS="${PKG_CHECKER_FILTER_OPTS:--v -L INFO -r ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/ -f ${SAB_BUILDFILE}}"
+export PKGS_CHECKER_FILTER_OPTS="${PKGS_CHECKER_FILTER_OPTS:--v -L INFO -r ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/ -f ${SAB_BUILDFILE}}"
+export PKGS_CHECKER_PKGLIST_OPTS="${PKGS_CHECKER_PKGLIST_OPTS:--v -L INFO}"
 
 . /sbin/sark-functions.sh
 
@@ -106,7 +107,7 @@ else
 fi
 
 # Filter inject of the files
-${PKGS_CHECKER_BIN} filter ${PKG_CHECKER_FILTER_OPTS} -d ${TEMPDIR}|| {
+${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_OPTS} -d ${TEMPDIR}|| {
   echo "Error on filter packages"
   exit 1
 }
@@ -121,3 +122,8 @@ for dir in ${SAB_STAGING_DIRS} ; do
         rm -rf ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir}
     fi
 done
+
+# Create pkglist file of binhost directory
+${PKGS_CHECKER_BIN} pkglist create ${PKGS_CHECKER_PKGLIST_OPTS} \
+  -d ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}-binhost/ \
+  -f ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}-binhost/${REPOSITORY_NAME}.pkglist
