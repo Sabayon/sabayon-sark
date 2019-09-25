@@ -107,7 +107,7 @@ else
 fi
 
 # Filter inject of the files
-${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_OPTS} -d ${TEMPDIR}|| {
+${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_OPTS} -d ${TEMPDIR} || {
   echo "Error on filter packages"
   exit 1
 }
@@ -126,6 +126,13 @@ done
 # Create pkglist file of binhost directory
 echo "Creating pkglist of binhost directory..."
 ${PKGS_CHECKER_BIN} pkglist create ${PKGS_CHECKER_PKGLIST_OPTS} \
-  -d ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}-binhost/ \
-  -f ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}-binhost/${REPOSITORY_NAME}.pkglist
+  -d ${OUTPUT_DIR}/ -f ${OUTPUT_DIR}/${REPOSITORY_NAME}.pkglist
+
+# Create report of binhost directory under artefacts
+export PKGS_CHECKER_FILTER_ARTEFACTS_OPTS="${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS:--v -L INFO -r ${OUTPUT_DIR}/${REPOSITORY_NAME} -f ${SAB_BUILDFILE} --dry-run}"
+${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS} -d ${OUTPUT_DIR} || {
+  echo "Error on filter artefacts binhost directory"
+  exit 1
+}
+
 echo "=== sark-localinjector has completed the job. Bye. ==="
