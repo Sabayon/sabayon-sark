@@ -1,0 +1,44 @@
+repository:
+  description: Sabayon Community SCR
+
+  maintenance:
+    remove:
+      - app-misc/neofetch
+
+build:
+  script:
+    pre:
+      - eselect profile set python3.6
+      - eselect gcc set x86_64-pc-linux-gnu-8.2.0
+      - eselect binutils set x86_64-pc-linux-gnu-2.31.1
+
+  equo:
+    package:
+      install:
+        - dev-libs/ocl-icd
+  emerge:
+    # Install each package separately
+    split_install: 1
+    jobs: 3
+    preserved_rebuild: 1
+    features: assume-digests binpkg-logs -userpriv config-protect-if-modified distlocks ebuild-locks fixlafiles merge-sync parallel-fetch preserve-libs protect-owned sandbox sfperms splitdebug strict
+    remote_overlay:
+      - flatpak-overlay|git|https://github.com/fosero/flatpak-overlay.git
+      - np-hardass-overlay|git|https://github.com/NP-Hardass/np-hardass-overlay.git
+      - sabayon-community|git|https://github.com/Sabayon/community.git
+      - tlp|git|https://github.com/dywisor/tlp-portage.git
+
+  overlays:
+    - 4nykey
+    - ace
+    - zugaina
+  target:
+    - app-admin/keepasshttp::np-hardass-overlay
+    - app-arch/rarcrack::gerislay
+    - app-crypt/veracrypt
+    - app-editors/atom-bin::jorgicio
+    - app-editors/sublime-text::sublime-text
+    - app-emulation/snapd::fol4
+    - app-eselect/eselect-sublime::sublime-text
+    - app-laptop/tlp
+    - app-misc/anki
