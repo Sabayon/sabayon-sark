@@ -365,46 +365,56 @@ OUTPUT_DIR="${VAGRANT_DIR}/artifacts/${REPOSITORY_NAME}" sabayon-createrepo-remo
 }
 
 set_var_from_yaml_if_nonempty() {
-	local _YAML_FILE=$1
-	shift
+  local _YAML_FILE=$1
+  shift
 
-	local _do_export=0
-	local _do_postprocess=0
+  local _do_export=0
+  local _do_postprocess=0
 
-	while true; do
-		case $1 in
-		-e)
-			_do_export=1
-			shift
-			;;
-		-p)
-			_do_postprocess=1
-			shift
-			;;
-		*)
-			break
-			;;
-		esac
-	done
+  while true; do
+    case $1 in
+      -e)
+        _do_export=1
+        shift
+        ;;
+      -p)
+        _do_postprocess=1
+        shift
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
 
-	local _shyaml_cmd=$1
-	local _key=$2
-	# Make sure it doesn't clash with this function's variable or there's a bug.
-	# (Variables in this function start with _, so best to avoid such ones.)
-	local _out_var=$3
+  local _shyaml_cmd=$1
+  local _key=$2
+  # Make sure it doesn't clash with this function's variable or there's a bug.
+  # (Variables in this function start with _, so best to avoid such ones.)
+  local _out_var=$3
 
-	# Using eval, so...
-	[[ $_out_var =~ ^[A-Za-z0-9_]+$ ]] || { echo "no way: '$_out_var'"; exit 1; }
+  # Using eval, so...
+  [[ $_out_var =~ ^[A-Za-z0-9_]+$ ]] || { echo "no way: '$_out_var'"; exit 1; }
 
-	local _tmp
-	_tmp=$(cat "$_YAML_FILE" | shyaml "$_shyaml_cmd" "$_key" 2> /dev/null) || true
+  local _out_over_varname="OVERRIDE_${_out_var}"
+  local override_var=""
 
-	if [[ -n $_tmp ]]; then
-		[[ $_do_postprocess = 1 ]] && _tmp=$(echo "$_tmp" | xargs echo)
-		eval "$_out_var=\$_tmp"
-		[[ $_do_export = 1 ]] && export "$_out_var"
-	fi
-	return 0
+  eval "override_var=\$$_out_over_varname"
+
+  if [ -n "$override_var" ] ; then
+    eval "$_out_var=\${override_var}"
+  else
+    local _tmp
+    _tmp=$(cat "$_YAML_FILE" | shyaml "$_shyaml_cmd" "$_key" 2> /dev/null) || true
+
+    if [[ -n $_tmp ]]; then
+      [[ $_do_postprocess = 1 ]] && _tmp=$(echo "$_tmp" | xargs echo)
+      eval "$_out_var=\$_tmp"
+      [[ $_do_export = 1 ]] && export "$_out_var"
+    fi
+
+  fi
+  return 0
 }
 
 load_env_from_yaml() {
@@ -428,11 +438,8 @@ set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value repository.maintenance.c
 # recompose our BUILD_ARGS
 # build.*
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.share_workspace SHARE_WORKSPACE
-if [ -n "$OVERRIDE_BUILD_TARGET" ] ; then
-  BUILD_ARGS="$OVERRIDE_BUILD_TARGET"
-else
-  set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_ARGS  #mixed toinstall BUILD_ARGS
-fi
+set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.target BUILD_TARGET
+BUILD_ARGS="${BUILD_TARGET}"
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.injected_target BUILD_INJECTED_ARGS  #mixed toinstall BUILD_ARGS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -p get-values build.overlays tmp_overlay; [[ -n ${tmp_overlay} ]] && BUILD_ARGS="${BUILD_ARGS} --layman ${tmp_overlay}" #--layman options
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e -p get-value build.verbose BUILDER_VERBOSE
