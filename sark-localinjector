@@ -129,8 +129,8 @@ ${PKGS_CHECKER_BIN} pkglist create ${PKGS_CHECKER_PKGLIST_OPTS} \
   -d ${OUTPUT_DIR}/ -f ${OUTPUT_DIR}/${REPOSITORY_NAME}.pkglist
 
 # Create report of binhost directory under artefacts
-export PKGS_CHECKER_FILTER_ARTEFACTS_OPTS="${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS:--v -L INFO -r ${OUTPUT_DIR}/${REPOSITORY_NAME} -f ${SAB_BUILDFILE} --dry-run}"
-${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS} -d ${OUTPUT_DIR} || {
+export PKGS_CHECKER_FILTER_ARTEFACTS_OPTS="${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS:--v -L INFO --dry-run}"
+${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS} -f ${SAB_BUILDFILE} -r ${OUTPUT_DIR}/${REPOSITORY_NAME} -d ${OUTPUT_DIR} || {
   echo "Error on filter artefacts binhost directory"
   exit 1
 }
