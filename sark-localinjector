@@ -50,6 +50,8 @@ fi
 
 [ -d /usr/portage/packages ] || mkdir -p /usr/portage/packages
 
+FILTER_DIR="${FILTER_DIR:-$(mktemp -d)}"
+
 # Copy binhosts from staging directories
 for dir in ${SAB_STAGING_DIRS} ; do
 
@@ -65,16 +67,26 @@ for dir in ${SAB_STAGING_DIRS} ; do
 
     for bhd in ${binhost_dirs} ; do
         if [ -d ${bhd} ] ; then
-            if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
-                cp -rvf ${bhd}/* ${OUTPUT_DIR} || true
-            else
-                cp -rvf ${bhd}/* /usr/portage/packages
-            fi
+          cp -rvf ${bhd}/* ${FILTER_DIR} || true
         fi
     done
 
     popd
 done
+
+# Filter inject of the files
+echo "=== Filter packages ==="
+${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_OPTS} -d ${FILTER_DIR} || {
+  echo "Error on filter packages"
+  exit 1
+}
+echo "=== Filter packages completed ==="
+
+if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
+  cp -rvf ${FILTER_DIR}/* ${OUTPUT_DIR} || true
+else
+  cp -rvf ${FILTER_DIR}/* /usr/portage/packages || true
+fi
 
 TEMPDIR=$(mktemp -d)
 
@@ -105,12 +117,6 @@ else
   # Inject all packages available under /usr/portage/packages
   cp -R /usr/portage/packages/* ${TEMPDIR} || true
 fi
-
-# Filter inject of the files
-${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_OPTS} -d ${TEMPDIR} || {
-  echo "Error on filter packages"
-  exit 1
-}
 
 export PKGS_CACHE_DIR=$TEMPDIR
 sark-localcreaterepo
