@@ -473,6 +473,7 @@ set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.repository EN
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.enable USE_EQUO # USE_EQUO
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.install_atoms EQUO_INSTALL_ATOMS # EQUO_INSTALL_ATOMS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.dependency_scan_depth DEPENDENCY_SCAN_DEPTH # DEPENDENCY_SCAN_DEPTH
+set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.dependency_ignore_versions DEPENDENCY_IGNORE_VERSIONS # DEPENDENCY_IGNORE_VERSIONS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.prune_virtuals PRUNE_VIRTUALS # PRUNE_VIRTUALS
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.install_version EQUO_INSTALL_VERSION # EQUO_INSTALL_VERSION
 set_var_from_yaml_if_nonempty "$YAML_FILE" -e get-value build.equo.dependency_install.split_install EQUO_SPLIT_INSTALL # EQUO_SPLIT_INSTALL
