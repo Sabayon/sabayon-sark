@@ -137,8 +137,13 @@ if [ "$CHECK_BUILD_DIFFS" -eq 1 ]; then
     TBZ2_DIR=${SAB_WORKSPACE}/artifacts/${REPOSITORY_NAME}-binhost
     echo "${TO_INJECT[@]} packages needs to be injected"
     for ((i=0; i<${#TO_INJECT[@]}; i++)) ; do
-      echo "Copying ${TO_INJECT[$i]} to ${TEMPDIR}..."
-      cp -rf "${TBZ2_DIR}"/${TO_INJECT[$i]} ${TEMPDIR}/
+      # We need maintains category directory because
+      # if there are two package with different category but with same
+      # name and version, last win.
+      dir=$(dirname ${TO_INJECT[$i]})
+      echo "Copying ${TO_INJECT[$i]} to ${TEMPDIR}/${dir}..."
+      mkdir -p ${TEMPDIR}/${dir} || true
+      cp -rf "${TBZ2_DIR}"/${TO_INJECT[$i]} ${TEMPDIR}/${dir}/
     done
   fi
 else
