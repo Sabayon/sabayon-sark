@@ -99,7 +99,7 @@ if [ "$SKIP_PULL" = "0" ] ; then
     repo_pkgs=$(${PKGS_CHECKER_BIN} sark pkglist $pkgs_checker_sark_list_opts)
 
     if [ -n "${repo_pkgs}" ] ; then
-      equo i $repo_pkgs || {
+      equo i --relaxed $repo_pkgs || {
         echo "Error on install repository packages"
         exit 1
       }
