@@ -167,4 +167,14 @@ ${PKGS_CHECKER_BIN} filter ${PKGS_CHECKER_FILTER_ARTEFACTS_OPTS} -f ${SAB_BUILDF
   exit 1
 }
 
+# Create pkglist json report
+echo "Creating pkglist JSON report..."
+repodir="${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${REPOSITORY_NAME}"
+${PKGS_CHECKER_BIN} pkglist show ${PKGS_CHECKER_PKGLIST_OPTS} \
+  -r ${repodir}/PKGLIST-* -j -p --repo \
+  ${REPOSITORY_NAME} --arch ${SAB_ARCH} > ${repodir}/pkglist.json || {
+  echo "Error on create pkglist.json"
+  exit 1
+}
+
 echo "=== sark-localinjector has completed the job. Bye. ==="
