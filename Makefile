@@ -23,3 +23,7 @@ install:
 
 	install -d $(DESTDIR)/$(UBINDIR)
 	install -m 0755 sark-* $(DESTDIR)/$(UBINDIR)/
+
+.PHONY: tests
+tests:
+	@tests/run_tests.sh
