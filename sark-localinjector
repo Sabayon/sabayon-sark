@@ -92,6 +92,24 @@ fi
 # that not installed packages are handled as to remove.
 if [ "$SKIP_PULL" = "0" ] ; then
   if [ -n "$SAB_STAGING_BUILD_RESOURCES" ] ; then
+
+    # Unmask/mask packages
+    if [ -n "${EQUO_MASKS}" ] ; then
+      [ -e /etc/entropy/packages/package.mask ] || {
+        touch /etc/entropy/packages/package.mask
+      }
+
+      equo mask ${EQUO_MASKS}
+    fi
+
+    if [ -n "${EQUO_UNMASKS}" ] ; then
+      [ -e /etc/entropy/packages/package.unmask ] || {
+        touch /etc/entropy/packages/package.unmask
+      }
+
+      equo unmask ${EQUO_UNMASKS}
+    fi
+
     for r in $SAB_STAGING_BUILD_RESOURCES ; do
       pkgs_checker_sark_list_opts="$pkgs_checker_sark_list_opts -s $r"
     done
