@@ -122,8 +122,12 @@ if [ "$SKIP_PULL" = "0" ] ; then
 
     if [ -n "${repo_pkgs}" ] ; then
       equo i --relaxed $repo_pkgs || {
-        echo "Error on install repository packages"
-        exit 1
+        echo "Error on install repository packages. I try to install every dep individually."
+        for pkg in ${repo_pkgs} ; do
+          equo i --relaxed $pkg || {
+            echo "Error on install package $pkg. I go ahead."
+          }
+        done
       }
     else
       echo "No packages of repo ${REPOSITORY_NAME} available."
