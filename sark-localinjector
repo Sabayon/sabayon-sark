@@ -13,6 +13,8 @@ export SAB_ARCH="${SAB_ARCH:-intel}"
 # Add skip env print if there are env vars with credentials.
 export SKIP_PRINTENV="${SKIP_PRINTENV:-0}"
 export SAB_BUILDFILE="${SAB_BUILDFILE:-build.yaml}"
+export LUET_STAGING="${LUET_STAGING:-0}"
+export LUET_PACKAGES="${LUET_PACKAGES:-*.package.tar}"
 
 export SAB_STAGING_DIRS="${SAB_STAGING_DIRS:-staging1 staging2}"
 
@@ -52,27 +54,41 @@ fi
 
 FILTER_DIR="${FILTER_DIR:-$(mktemp -d)}"
 
-# Copy binhosts from staging directories
-for dir in ${SAB_STAGING_DIRS} ; do
+if [ "${LUET_STAGING}" = "1" ] ; then
+  # Luet create file .tar with $portage/Packages files
 
-    [ ! -d ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir} ] && {
-        echo "Skipping staging directory ${dir}."
-        continue
+  for pkg in $(ls -l ${LUET_PACKAGES}) ; do
+    tmpdir=$(mktemp -d)
+    tar -xvf ${pkg} -C $tmpdir || {
+      echo "Error on untar file ${pkg}"
+      exit 1
     }
+    cp -rvf ${tmpdir}/usr/portage/packages/* ${FILTER_DIR} || true
+  done
 
-    pushd ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir}
+else
+  # Copy binhosts from staging directories
+  for dir in ${SAB_STAGING_DIRS} ; do
 
-    # Copy files from any binhost directory
-    binhost_dirs=$(ls --color=none -d ./*-binhost)
+      [ ! -d ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir} ] && {
+          echo "Skipping staging directory ${dir}."
+          continue
+      }
 
-    for bhd in ${binhost_dirs} ; do
-        if [ -d ${bhd} ] ; then
-          cp -rvf ${bhd}/* ${FILTER_DIR} || true
-        fi
-    done
+      pushd ${SAB_WORKSPACE}/${SAB_ARTIFACTS_DIR}/${dir}
 
-    popd
-done
+      # Copy files from any binhost directory
+      binhost_dirs=$(ls --color=none -d ./*-binhost)
+
+      for bhd in ${binhost_dirs} ; do
+          if [ -d ${bhd} ] ; then
+            cp -rvf ${bhd}/* ${FILTER_DIR} || true
+          fi
+      done
+
+      popd
+  done
+fi
 
 # Filter inject of the files
 echo "=== Filter packages ==="
