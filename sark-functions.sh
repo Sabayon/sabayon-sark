@@ -593,7 +593,7 @@ fi
 # until portage support this directly.
 # (yeah, i know it's bad)
 sabayon_mask_upstream_pkgs () {
-  local maskfile=${1:-/var/lib/layman/sabayon-distro/profiles/targets/sabayon/arm/package.mask}
+  local maskfile=${1:-/var/lib/layman/sabayon-distro/profiles/targets/sabayon/${SABAYON_ARCH}/package.mask}
   local outfile=${2:-/etc/portage/package.mask/00-sabayon.package.mask}
 
   grep GLOBAL_MASK ${maskfile} | awk '{ print  $3 }'  | tail -n +2 > ${outfile}
