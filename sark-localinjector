@@ -54,6 +54,20 @@ fi
 
 FILTER_DIR="${FILTER_DIR:-$(mktemp -d)}"
 
+echo "
+
++================================================+
+LUET_STAGING = $LUET_STAGING
+FILTER_DIR = $FILTER_DIR
+SAB_ARTIFACTS_DIR = $SAB_ARTIFACTS_DIR
+SAB_WORKSPACE = $SAB_WORKSPACEa
+SAB_STAGING_DIRS = $SAB_STAGING_DIRS
+SAB_STAGING_BUILD_RESOURCES = $SAB_STAGING_BUILD_RESOURCES
+SKIP_PULL = $SKIP_PULL
++================================================+
+
+"
+
 if [ "${LUET_STAGING}" = "1" ] ; then
   # Luet create file .tar with $portage/Packages files
 
@@ -64,6 +78,7 @@ if [ "${LUET_STAGING}" = "1" ] ; then
       exit 1
     }
     cp -rvf ${tmpdir}/usr/portage/packages/* ${FILTER_DIR} || true
+    rm -rf ${tmpdir}
   done
 
 else
